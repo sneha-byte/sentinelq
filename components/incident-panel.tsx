@@ -92,7 +92,7 @@ export function IncidentCard({
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {timeAgo}
+                <span suppressHydrationWarning>{timeAgo}</span>
               </span>
             </div>
           </div>
