@@ -34,7 +34,7 @@ export interface Incident {
   startedAt: string
   endedAt: string | null
   label: string
-  threatScore: number
+  threatScore: number        // 0–100 internally
   qualityScore: number
   confidenceScore: number
   routeMode: RouteMode
@@ -57,6 +57,19 @@ export interface HubStatus {
   localProcessed: number
   cloudEscalated: number
   uptime: string
+}
+
+// ── Helper: convert 0–100 threat score to 1–10 display ──────────────────────
+export function getThreatScore10(score: number): number {
+  return Math.max(1, Math.min(10, Math.round(score / 10)))
+}
+
+// ── Helper: derive threat level from 1–10 score ──────────────────────────────
+export function getThreatLevelFrom10(score10: number): ThreatLevel {
+  if (score10 >= 9) return "critical"
+  if (score10 >= 7) return "high"
+  if (score10 >= 4) return "medium"
+  return "low"
 }
 
 export const hub: HubStatus = {
@@ -310,21 +323,21 @@ export const analyticsData = {
     { time: "22:00", incidents: 5, local: 4, cloud: 1 },
   ],
   detectionsByType: [
-    { type: "Person", count: 342, fill: "var(--color-chart-1)" },
+    { type: "Person",  count: 342, fill: "var(--color-chart-1)" },
     { type: "Vehicle", count: 128, fill: "var(--color-chart-2)" },
-    { type: "Animal", count: 47, fill: "var(--color-chart-3)" },
-    { type: "Unknown", count: 18, fill: "var(--color-chart-4)" },
+    { type: "Animal",  count: 47,  fill: "var(--color-chart-3)" },
+    { type: "Unknown", count: 18,  fill: "var(--color-chart-4)" },
   ],
   threatDistribution: [
-    { level: "Low", count: 312 },
-    { level: "Medium", count: 145 },
-    { level: "High", count: 28 },
-    { level: "Critical", count: 3 },
+    { level: "Low",      count: 312 },
+    { level: "Medium",   count: 145 },
+    { level: "High",     count: 28  },
+    { level: "Critical", count: 3   },
   ],
   routingBreakdown: [
-    { mode: "Local Only", count: 847, percentage: 97.4 },
-    { mode: "Local + Cloud", count: 15, percentage: 1.7 },
-    { mode: "Cloud Escalated", count: 8, percentage: 0.9 },
+    { mode: "Local Only",      count: 847, percentage: 97.4 },
+    { mode: "Local + Cloud",   count: 15,  percentage: 1.7  },
+    { mode: "Cloud Escalated", count: 8,   percentage: 0.9  },
   ],
   cameraActivity: cameras.map(c => ({
     name: c.name.length > 12 ? c.name.substring(0, 12) + "..." : c.name,
@@ -335,34 +348,34 @@ export const analyticsData = {
 
 export function getThreatColor(level: ThreatLevel) {
   switch (level) {
-    case "low": return "text-success"
-    case "medium": return "text-warning"
-    case "high": return "text-destructive"
+    case "low":      return "text-success"
+    case "medium":   return "text-warning"
+    case "high":     return "text-destructive"
     case "critical": return "text-destructive"
   }
 }
 
 export function getThreatBgColor(level: ThreatLevel) {
   switch (level) {
-    case "low": return "bg-success/10 text-success border-success/20"
-    case "medium": return "bg-warning/10 text-warning border-warning/20"
-    case "high": return "bg-destructive/10 text-destructive border-destructive/20"
+    case "low":      return "bg-success/10 text-success border-success/20"
+    case "medium":   return "bg-warning/10 text-warning border-warning/20"
+    case "high":     return "bg-destructive/10 text-destructive border-destructive/20"
     case "critical": return "bg-destructive/20 text-destructive border-destructive/40"
   }
 }
 
 export function getRouteColor(mode: RouteMode) {
   switch (mode) {
-    case "LOCAL": return "bg-success/10 text-success border-success/20"
+    case "LOCAL":              return "bg-success/10 text-success border-success/20"
     case "LOCAL_VERIFY_CLOUD": return "bg-warning/10 text-warning border-warning/20"
-    case "CLOUD": return "bg-chart-2/10 text-chart-2 border-chart-2/20"
+    case "CLOUD":              return "bg-chart-2/10 text-chart-2 border-chart-2/20"
   }
 }
 
 export function getStatusColor(status: CameraStatus) {
   switch (status) {
-    case "online": return "bg-success"
+    case "online":   return "bg-success"
     case "degraded": return "bg-warning"
-    case "offline": return "bg-destructive"
+    case "offline":  return "bg-destructive"
   }
 }
