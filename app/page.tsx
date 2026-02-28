@@ -1,0 +1,39 @@
+"use client";
+
+import { useState } from "react";
+import { AppSidebar } from "@/components/app-sidebar";
+import { TopHeader } from "@/components/top-header";
+import { DashboardView } from "@/components/dashboard-view";
+import { CamerasView } from "@/components/cameras-view";
+import { IncidentsView } from "@/components/incidents-view";
+import { AnalyticsView } from "@/components/analytics-view";
+import { SettingsView } from "@/components/settings-view";
+import { NeighborsView } from "@/components/neighbors-view";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+export default function SentinelQDashboard() {
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <TopHeader />
+
+        <ScrollArea className="flex-1">
+          <div className="p-6">
+            {activeTab === "dashboard" && (
+              <DashboardView onNavigate={setActiveTab} />
+            )}
+            {activeTab === "cameras" && <CamerasView />}
+            {activeTab === "incidents" && <IncidentsView />}
+            {activeTab === "analytics" && <AnalyticsView />}
+            {activeTab === "neighbors" && <NeighborsView />}
+            {activeTab === "settings" && <SettingsView />}
+          </div>
+        </ScrollArea>
+      </div>
+    </div>
+  );
+}
