@@ -27,9 +27,9 @@ export function IncidentsView() {
   })
 
   return (
-    <div className="flex gap-5 h-[calc(100vh-130px)]">
+    <div className="flex gap-5 h-[calc(100vh-130px)] min-h-0">
       {/* List */}
-      <div className="flex w-[380px] shrink-0 flex-col rounded-xl border border-border bg-card">
+      <div className="flex w-[380px] shrink-0 flex-col rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -54,7 +54,7 @@ export function IncidentsView() {
           ))}
         </div>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="flex flex-col gap-2 p-3">
             {filteredIncidents.map((incident) => (
               <IncidentCard
