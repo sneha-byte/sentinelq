@@ -9,7 +9,6 @@ import { IncidentsView } from "@/components/incidents-view";
 import { AnalyticsView } from "@/components/analytics-view";
 import { SettingsView } from "@/components/settings-view";
 import { NeighborsView } from "@/components/neighbors-view";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function SentinelQDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -21,7 +20,7 @@ export default function SentinelQDashboard() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopHeader />
 
-        <ScrollArea className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             {activeTab === "dashboard" && (
               <DashboardView onNavigate={setActiveTab} />
@@ -32,7 +31,7 @@ export default function SentinelQDashboard() {
             {activeTab === "neighbors" && <NeighborsView />}
             {activeTab === "settings" && <SettingsView />}
           </div>
-        </ScrollArea>
+        </main>
       </div>
     </div>
   );

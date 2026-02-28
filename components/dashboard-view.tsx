@@ -78,7 +78,9 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {recentIncidents.map((incident) => (
-            <IncidentCard key={incident.id} incident={incident} />
+            <div key={incident.id} className="min-w-0">
+              <IncidentCard incident={incident} />
+            </div>
           ))}
         </div>
       </div>

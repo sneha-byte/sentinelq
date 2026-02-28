@@ -1,33 +1,37 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Bell, Search } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect } from "react";
+import { Bell } from "lucide-react";
 
 export function TopHeader() {
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [currentTime, setCurrentTime] = useState<string | null>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(interval)
-  }, [])
+    const format = () =>
+      new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    setCurrentTime(format());
+    const interval = setInterval(() => setCurrentTime(format()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <header className="flex items-center justify-between border-b border-border bg-card px-6 py-3">
+    <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-3">
       <div>
-        <h1 className="text-lg font-semibold text-foreground tracking-tight">SentinelQ</h1>
+        <h1 className="text-lg font-semibold text-foreground tracking-tight">
+          SentinelQ
+        </h1>
         <p className="text-xs text-muted-foreground">
           Edge-to-Cloud AI Surveillance
         </p>
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="h-1.5 w-1.5 rounded-full bg-success animate-live" />
-          <span className="font-mono">
-            {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </span>
-        </div>
+        {currentTime && (
+          <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-success animate-live" />
+            <span className="font-mono">{currentTime}</span>
+          </div>
+        )}
 
         <button className="relative rounded-lg bg-secondary p-2 text-muted-foreground transition-colors hover:text-foreground">
           <Bell className="h-4 w-4" />
@@ -41,5 +45,5 @@ export function TopHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }
