@@ -1,5 +1,8 @@
 "use client"
 
+import { useState } from "react"
+import type { Camera, Incident } from "@/lib/mock-data"
+import { cameras as mockCameras, incidents as mockIncidents } from "@/lib/mock-data"
 import { useState, useEffect } from "react"
 import { cameras, incidents } from "@/lib/mock-data"
 import { StatsOverview } from "@/components/stats-overview"
@@ -8,6 +11,7 @@ import { IncidentCard } from "@/components/incident-panel"
 import {
   AlertTriangle, Camera, ChevronRight, ShieldAlert,
   Siren, Lock, Eye, EyeOff, ShieldCheck, Sparkles,
+  Lightbulb, DoorOpen, Volume2,
   Lightbulb, DoorOpen, Volume2, Shield,
   Cloud, Sun, CloudRain, Wind, Thermometer,
 } from "lucide-react"
@@ -16,9 +20,12 @@ import { cn } from "@/lib/utils"
 
 interface DashboardViewProps {
   onNavigate: (tab: string) => void
+  cameras?: Camera[]
+  incidents?: Incident[]
+  clipUrls?: string[]
 }
 
-function buildDailyBrief() {
+function buildDailyBrief(incidents: Incident[], cameras: Camera[]) {
   const total    = incidents.length
   const active   = incidents.filter(i => !i.endedAt).length
   const high     = incidents.filter(i => i.threatLevel === "high" || i.threatLevel === "critical").length
@@ -32,6 +39,30 @@ function buildDailyBrief() {
     return { greeting, summary: `${total} incidents today; 1 active needs review, ${resolved} resolved, ${high} high-threat.`, status: "warn" as const }
   return { greeting, summary: `${active} active incidents require your attention out of ${total} recorded today. ${high} were high or critical. Please review when you can.`, status: "alert" as const }
 }
+
+// ── Mock weather data ─────────────────────────────────────────────────────
+const WEATHER = {
+  temp: 64,
+  condition: "Partly Cloudy",
+  humidity: 58,
+  wind: 9,
+  icon: "cloudy",
+  securityNote: "Low wind — motion sensors reliable tonight.",
+}
+
+function WeatherIcon({ type, className }: { type: string; className?: string }) {
+  if (type === "sunny") return <Sun       className={cn("h-5 w-5 text-yellow-400", className)} />
+  if (type === "rainy") return <CloudRain className={cn("h-5 w-5 text-primary",    className)} />
+  return <Cloud className={cn("h-5 w-5 text-muted-foreground", className)} />
+}
+
+// ── Quick actions ─────────────────────────────────────────────────────────
+const QUICK_ACTIONS = [
+  { id: "lights",  label: "All Lights", icon: Lightbulb, activeLabel: "Lights On",  activeColor: "border-yellow-400/40 bg-yellow-400/10 text-yellow-600" },
+  { id: "lock",    label: "Lock Doors", icon: Lock,      activeLabel: "Locked",     activeColor: "border-success/40 bg-success/10 text-success" },
+  { id: "garage",  label: "Garage",     icon: DoorOpen,  activeLabel: "Open",       activeColor: "border-primary/40 bg-primary/10 text-primary" },
+  { id: "alarm",   label: "Alarm",      icon: Volume2,   activeLabel: "Alarm On",   activeColor: "border-destructive/40 bg-destructive/10 text-destructive" },
+]
 
 const CORRECT_PIN = "1234"
 
@@ -93,6 +124,12 @@ function PinPad({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () =
   )
 }
 
+export function DashboardView({
+  onNavigate,
+  cameras = mockCameras,
+  incidents = mockIncidents,
+  clipUrls = [],
+}: DashboardViewProps) {
 // ── Mock weather data ─────────────────────────────────────────────────────
 const WEATHER = {
   temp: 64,
@@ -121,7 +158,10 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
   const topCameras      = cameras.filter(c => c.status === "online").slice(0, 4)
   const recentIncidents = incidents.slice(0, 3)
   const activeIncident  = incidents.find(i => !i.endedAt)
-  const { greeting, summary, status } = buildDailyBrief()
+  const { greeting, summary, status } = buildDailyBrief(incidents, cameras)
+
+  const [sosStep,       setSosStep]       = useState<"closed" | "pin" | "confirm" | "sent">("closed")
+  const [activeActions, setActiveActions] = useState<Set<string>>(new Set())
 
   const [sosStep,       setSosStep]       = useState<"closed" | "pin" | "confirm" | "sent">("closed")
   const [activeActions, setActiveActions] = useState<Set<string>>(new Set())
@@ -163,6 +203,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           </div>
           {/* Mascot */}
           <div className="shrink-0 hidden sm:block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mascot.png" alt="SentinelQ" className="h-36 w-auto object-contain drop-shadow-sm" />
           </div>
         </div>
@@ -216,6 +257,9 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           </div>
           <div className="flex-1 min-w-0 overflow-hidden">
             <p className="text-sm font-semibold text-foreground truncate">{activeIncident.label}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {activeIncident.cameraName} · Threat score: {activeIncident.threatScore}/100
+            </p>
             <p className="text-xs text-muted-foreground mt-0.5 truncate">{activeIncident.cameraName} · Threat score: {activeIncident.threatScore}/100</p>
           </div>
           <Button size="sm" variant="destructive" onClick={() => onNavigate("incidents")} className="shrink-0 rounded-lg">
@@ -225,7 +269,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
       )}
 
       {/* ── Stats ── */}
-      <StatsOverview />
+      <StatsOverview cameras={cameras} incidents={incidents} />
 
       {/* ── Live feeds ── */}
       <div>
@@ -239,7 +283,9 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           </Button>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {topCameras.map(cam => <CameraFeedCard key={cam.id} camera={cam} />)}
+          {topCameras.map(cam => (
+            <CameraFeedCard key={cam.id} camera={cam} videoUrls={clipUrls} />
+          ))}
         </div>
       </div>
 
@@ -305,6 +351,11 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                     </li>
                   ))}
                 </ul>
+                <p className="text-center text-xs text-muted-foreground">
+                  Only use this in a genuine emergency. Emergency services will be dispatched to your location.
+                </p>
+                <button onClick={() => setSosStep("sent")}
+                  className="w-full rounded-xl bg-destructive py-3.5 text-sm font-bold text-white shadow-sm hover:opacity-90 transition-opacity">
                 <button onClick={() => setSosStep("sent")} className="w-full rounded-xl bg-destructive py-3.5 text-sm font-bold text-white shadow-sm hover:opacity-90 transition-opacity">
                   Confirm — Send SOS Now
                 </button>
@@ -323,6 +374,20 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                   <p className="mt-1 text-sm text-muted-foreground">Emergency services have your location and footage. Help is on the way.</p>
                 </div>
                 <div className="w-full rounded-xl bg-secondary/50 border border-border p-4 text-left text-sm space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Dispatch confirmed</span>
+                    <span className="font-semibold text-success">Yes</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Estimated ETA</span>
+                    <span className="font-semibold text-foreground">~8 minutes</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Case ID</span>
+                    <span className="font-mono text-xs font-semibold text-foreground" suppressHydrationWarning>
+                      #SQ-{Date.now().toString().slice(-6)}
+                    </span>
+                  </div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Dispatch confirmed</span><span className="font-semibold text-success">Yes</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Estimated ETA</span><span className="font-semibold text-foreground">~8 minutes</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Case ID</span><span className="font-mono text-xs font-semibold text-foreground" suppressHydrationWarning>#SQ-{Date.now().toString().slice(-6)}</span></div>

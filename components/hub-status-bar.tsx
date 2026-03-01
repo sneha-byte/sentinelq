@@ -1,21 +1,26 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { hub } from "@/lib/mock-data"
+import { hub as mockHub } from "@/lib/mock-data"
+import type { HubStatus } from "@/lib/mock-data"
 import { Progress } from "@/components/ui/progress"
 import {
   Shield,
   Cpu,
   HardDrive,
   Camera,
-  ArrowUpCircle,
-  ArrowDownCircle,
   Cloud,
   Zap,
   Clock,
 } from "lucide-react"
 
-export function HubStatusBar() {
+interface HubStatusBarProps {
+  hub?: HubStatus
+}
+
+export function HubStatusBar({ hub: hubProp }: HubStatusBarProps) {
+  const hub = hubProp ?? mockHub
+
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card px-4 py-3">
       {/* Hub Name & Status */}
@@ -26,8 +31,20 @@ export function HubStatusBar() {
         <div>
           <p className="text-xs font-medium text-foreground">{hub.deviceName}</p>
           <div className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-success animate-live" />
-            <span className="text-[10px] font-mono text-success uppercase">Online</span>
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                hub.status === "online" ? "bg-success animate-live" : "bg-destructive"
+              )}
+            />
+            <span
+              className={cn(
+                "text-[10px] font-mono uppercase",
+                hub.status === "online" ? "text-success" : "text-destructive"
+              )}
+            >
+              {hub.status}
+            </span>
           </div>
         </div>
       </div>
@@ -63,7 +80,9 @@ export function HubStatusBar() {
       {/* Cameras */}
       <div className="flex items-center gap-1.5">
         <Camera className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-xs font-mono text-foreground">{hub.activeCameras}/{hub.totalCameras}</span>
+        <span className="text-xs font-mono text-foreground">
+          {hub.activeCameras}/{hub.totalCameras}
+        </span>
         <span className="text-[10px] text-muted-foreground">cams</span>
       </div>
 
