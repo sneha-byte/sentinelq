@@ -1,6 +1,8 @@
 "use client"
 
 import { Camera, AlertTriangle, Shield, Cpu } from "lucide-react"
+import type { Camera as CameraType, Incident } from "@/lib/mock-data"
+import { cameras as mockCameras, incidents as mockIncidents } from "@/lib/mock-data"
 
 interface StatCardProps {
   label: string
@@ -26,38 +28,63 @@ function StatCard({ label, value, icon: Icon, description, color, bgColor }: Sta
   )
 }
 
-export function StatsOverview() {
+interface StatsOverviewProps {
+  cameras?: CameraType[]
+  incidents?: Incident[]
+}
+
+export function StatsOverview({ cameras = mockCameras, incidents = mockIncidents }: StatsOverviewProps) {
+  const totalCameras = cameras.length
+  const activeCameras = cameras.filter((c) => c.status === "online").length
+  const offlineCameras = cameras.filter((c) => c.status !== "online").length
+
+  const activeIncidents = incidents.filter((i) => !i.endedAt).length
+
+  // Safety score: penalise for active high-threat incidents and offline cameras
+  const highIncidents = incidents.filter(
+    (i) => !i.endedAt && (i.threatLevel === "high" || i.threatLevel === "critical")
+  ).length
+  const rawSafety = 100 - highIncidents * 20 - offlineCameras * 5
+  const safetyScore = Math.max(0, Math.min(100, rawSafety))
+  const safetyLabel =
+    safetyScore >= 80 ? "Low risk" : safetyScore >= 55 ? "Moderate risk" : "High risk"
+
+  // Edge processing rate
+  const totalInc = incidents.length || 1
+  const localInc = incidents.filter((i) => i.routeMode === "LOCAL").length
+  const edgePct = Math.round((localInc / totalInc) * 1000) / 10
+
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <StatCard
         label="Active Cameras"
-        value="6 / 8"
+        value={`${activeCameras} / ${totalCameras}`}
         icon={Camera}
-        description="2 offline"
+        description={offlineCameras > 0 ? `${offlineCameras} offline` : "All cameras online"}
         color="text-primary"
         bgColor="bg-primary/10"
       />
       <StatCard
         label="Active Incidents"
-        value="1"
+        value={activeIncidents}
         icon={AlertTriangle}
-        description="Requires review"
+        description={activeIncidents > 0 ? "Requires review" : "No active incidents"}
         color="text-destructive"
         bgColor="bg-destructive/10"
       />
       <StatCard
         label="Safety Score"
-        value="73"
+        value={safetyScore}
         icon={Shield}
-        description="Moderate risk"
-        color="text-warning"
-        bgColor="bg-warning/10"
+        description={safetyLabel}
+        color={safetyScore >= 80 ? "text-success" : safetyScore >= 55 ? "text-warning" : "text-destructive"}
+        bgColor={safetyScore >= 80 ? "bg-success/10" : safetyScore >= 55 ? "bg-warning/10" : "bg-destructive/10"}
       />
       <StatCard
         label="Edge Processed"
-        value="97.4%"
+        value={`${edgePct}%`}
         icon={Cpu}
-        description="847 local inferences"
+        description={`${localInc} local inferences`}
         color="text-success"
         bgColor="bg-success/10"
       />

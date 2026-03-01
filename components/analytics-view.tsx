@@ -1,6 +1,7 @@
 "use client";
 
-import { analyticsData } from "@/lib/mock-data";
+import { analyticsData as mockAnalytics } from "@/lib/mock-data";
+import type { DashboardAnalytics } from "@/hooks/use-dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AreaChart,
@@ -24,7 +25,6 @@ const chartColors = {
   rose: "#ef4444",
   muted: "#94a3b8",
   grid: "#e2e8f0",
-  bg: "#f8fafc",
 };
 
 function ChartTooltip({
@@ -42,10 +42,7 @@ function ChartTooltip({
       {label && <p className="text-xs text-muted-foreground mb-1">{label}</p>}
       {payload.map((entry, index) => (
         <div key={index} className="flex items-center gap-2 text-xs">
-          <span
-            className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-muted-foreground">{entry.name}:</span>
           <span className="font-semibold text-foreground">{entry.value}</span>
         </div>
@@ -54,7 +51,19 @@ function ChartTooltip({
   );
 }
 
-export function AnalyticsView() {
+interface AnalyticsViewProps {
+  analytics?: DashboardAnalytics;
+}
+
+export function AnalyticsView({ analytics = mockAnalytics as DashboardAnalytics }: AnalyticsViewProps) {
+  const {
+    incidentsOverTime,
+    detectionsByType,
+    threatDistribution,
+    routingBreakdown,
+    cameraActivity,
+  } = analytics;
+
   return (
     <div className="flex flex-col gap-5 h-full overflow-y-auto">
       <h2 className="text-base font-semibold text-foreground">Analytics</h2>
@@ -70,37 +79,18 @@ export function AnalyticsView() {
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={analyticsData.incidentsOverTime}>
+                <AreaChart data={incidentsOverTime}>
                   <defs>
                     <linearGradient id="gradLocal" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="5%"
-                        stopColor={chartColors.primary}
-                        stopOpacity={0.15}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor={chartColors.primary}
-                        stopOpacity={0}
-                      />
+                      <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.15} />
+                      <stop offset="95%" stopColor={chartColors.primary} stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gradCloud" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="5%"
-                        stopColor={chartColors.teal}
-                        stopOpacity={0.15}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor={chartColors.teal}
-                        stopOpacity={0}
-                      />
+                      <stop offset="5%" stopColor={chartColors.teal} stopOpacity={0.15} />
+                      <stop offset="95%" stopColor={chartColors.teal} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={chartColors.grid}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                   <XAxis
                     dataKey="time"
                     tick={{ fontSize: 11, fill: chartColors.muted }}
@@ -147,7 +137,7 @@ export function AnalyticsView() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={analyticsData.detectionsByType}
+                    data={detectionsByType}
                     dataKey="count"
                     nameKey="type"
                     cx="50%"
@@ -157,16 +147,14 @@ export function AnalyticsView() {
                     strokeWidth={2}
                     stroke="#fff"
                   >
-                    {analyticsData.detectionsByType.map((_, index) => {
+                    {detectionsByType.map((_, index) => {
                       const fills = [
                         chartColors.primary,
                         chartColors.teal,
                         chartColors.amber,
                         chartColors.rose,
                       ];
-                      return (
-                        <Cell key={index} fill={fills[index % fills.length]} />
-                      );
+                      return <Cell key={index} fill={fills[index % fills.length]} />;
                     })}
                   </Pie>
                   <Tooltip content={<ChartTooltip />} />
@@ -174,7 +162,7 @@ export function AnalyticsView() {
               </ResponsiveContainer>
             </div>
             <div className="mt-2 flex flex-wrap justify-center gap-4">
-              {analyticsData.detectionsByType.map((d, i) => {
+              {detectionsByType.map((d, i) => {
                 const fills = [
                   chartColors.primary,
                   chartColors.teal,
@@ -200,17 +188,12 @@ export function AnalyticsView() {
         {/* Threat Distribution */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">
-              Threat Levels
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Threat Levels</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={analyticsData.threatDistribution}
-                  layout="vertical"
-                >
+                <BarChart data={threatDistribution} layout="vertical">
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke={chartColors.grid}
@@ -230,14 +213,14 @@ export function AnalyticsView() {
                   />
                   <Tooltip content={<ChartTooltip />} />
                   <Bar dataKey="count" name="Incidents" radius={[0, 6, 6, 0]}>
-                    {analyticsData.threatDistribution.map((_, index) => {
+                    {threatDistribution.map((_, index) => {
                       const fills = [
                         chartColors.teal,
                         chartColors.amber,
                         chartColors.rose,
                         "#dc2626",
                       ];
-                      return <Cell key={index} fill={fills[index]} />;
+                      return <Cell key={index} fill={fills[index % fills.length]} />;
                     })}
                   </Bar>
                 </BarChart>
@@ -246,7 +229,7 @@ export function AnalyticsView() {
           </CardContent>
         </Card>
 
-        {/* Routing */}
+        {/* Routing Breakdown */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-foreground">
@@ -255,12 +238,8 @@ export function AnalyticsView() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-5">
-              {analyticsData.routingBreakdown.map((r, i) => {
-                const fills = [
-                  chartColors.teal,
-                  chartColors.amber,
-                  chartColors.primary,
-                ];
+              {routingBreakdown.map((r, i) => {
+                const fills = [chartColors.teal, chartColors.amber, chartColors.primary];
                 return (
                   <div key={i}>
                     <div className="flex items-center justify-between mb-1.5">
@@ -272,15 +251,10 @@ export function AnalyticsView() {
                     <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${r.percentage}%`,
-                          backgroundColor: fills[i],
-                        }}
+                        style={{ width: `${r.percentage}%`, backgroundColor: fills[i] }}
                       />
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {r.count} inferences
-                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{r.count} inferences</p>
                   </div>
                 );
               })}
@@ -291,18 +265,13 @@ export function AnalyticsView() {
         {/* Camera Activity */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">
-              Camera Activity
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Camera Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analyticsData.cameraActivity}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={chartColors.grid}
-                  />
+                <BarChart data={cameraActivity}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 9, fill: chartColors.muted }}

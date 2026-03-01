@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { cameras, incidents } from "@/lib/mock-data"
+import type { Camera, Incident } from "@/lib/mock-data"
+import { cameras as mockCameras, incidents as mockIncidents } from "@/lib/mock-data"
 import { StatsOverview } from "@/components/stats-overview"
 import { CameraFeedCard } from "@/components/camera-feed-card"
 import { IncidentCard } from "@/components/incident-panel"
@@ -14,9 +15,12 @@ import { cn } from "@/lib/utils"
 
 interface DashboardViewProps {
   onNavigate: (tab: string) => void
+  cameras?: Camera[]
+  incidents?: Incident[]
+  clipUrls?: string[]
 }
 
-function buildDailyBrief() {
+function buildDailyBrief(incidents: Incident[], cameras: Camera[]) {
   const total    = incidents.length
   const active   = incidents.filter(i => !i.endedAt).length
   const high     = incidents.filter(i => i.threatLevel === "high" || i.threatLevel === "critical").length
@@ -113,11 +117,16 @@ function PinPad({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () =
   )
 }
 
-export function DashboardView({ onNavigate }: DashboardViewProps) {
+export function DashboardView({
+  onNavigate,
+  cameras = mockCameras,
+  incidents = mockIncidents,
+  clipUrls = [],
+}: DashboardViewProps) {
   const topCameras      = cameras.filter(c => c.status === "online").slice(0, 4)
   const recentIncidents = incidents.slice(0, 3)
   const activeIncident  = incidents.find(i => !i.endedAt)
-  const { greeting, summary, status } = buildDailyBrief()
+  const { greeting, summary, status } = buildDailyBrief(incidents, cameras)
 
   const [sosStep, setSosStep] = useState<"closed" | "pin" | "confirm" | "sent">("closed")
 
@@ -126,7 +135,6 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
       {/* ── Hero greeting card ── */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 p-6">
-        {/* Soft decorative circles */}
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/8 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-6 right-16 h-24 w-24 rounded-full bg-primary/6 blur-xl" />
 
@@ -174,7 +182,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
       )}
 
       {/* ── Stats ── */}
-      <StatsOverview />
+      <StatsOverview cameras={cameras} incidents={incidents} />
 
       {/* ── Live feeds ── */}
       <div>
@@ -188,7 +196,9 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           </Button>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {topCameras.map(cam => <CameraFeedCard key={cam.id} camera={cam} />)}
+          {topCameras.map(cam => (
+            <CameraFeedCard key={cam.id} camera={cam} videoUrls={clipUrls} />
+          ))}
         </div>
       </div>
 
@@ -212,7 +222,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         </div>
       </div>
 
-      {/* ── Silent SOS — tucked at the bottom, understated ── */}
+      {/* ── Silent SOS ── */}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3 flex-1 min-w-0">
