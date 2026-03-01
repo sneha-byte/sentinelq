@@ -7,48 +7,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  AlertTriangle,
-  Clock,
-  Camera,
-  Check,
-  Cpu,
-  Cloud,
-  User,
-  Car,
-  Dog,
-  HelpCircle,
-  Phone,
+  AlertTriangle, Clock, Camera, Check,
+  Cpu, Cloud, User, Car, Dog, HelpCircle, Phone, ShieldCheck,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-// Detection icon helper
 function getDetectionIcon(className: string) {
   switch (className) {
-    case "person":
-      return User;
-    case "vehicle":
-      return Car;
-    case "animal":
-      return Dog;
-    default:
-      return HelpCircle;
+    case "person":  return User;
+    case "vehicle": return Car;
+    case "animal":  return Dog;
+    default:        return HelpCircle;
   }
 }
 
-// IncidentCard
 export function IncidentCard({
-  incident,
-  onSelect,
-  selected,
+  incident, onSelect, selected,
 }: {
-  incident: Incident;
+  incident:  Incident;
   onSelect?: (incident: Incident) => void;
   selected?: boolean;
 }) {
   const isActive = !incident.endedAt;
-  const timeAgo = formatDistanceToNow(new Date(incident.startedAt), {
-    addSuffix: true,
-  });
+  const timeAgo  = formatDistanceToNow(new Date(incident.startedAt), { addSuffix: true });
 
   return (
     <button
@@ -62,38 +43,23 @@ export function IncidentCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-3 min-w-0">
-          <div
-            className={cn(
-              "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-              incident.threatLevel === "critical" || incident.threatLevel === "high"
-                ? "bg-destructive/10"
-                : incident.threatLevel === "medium"
-                ? "bg-warning/10"
-                : "bg-success/10"
-            )}
-          >
-            <AlertTriangle
-              className={cn("h-4 w-4", getThreatColor(incident.threatLevel))}
-            />
+          <div className={cn(
+            "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+            incident.threatLevel === "critical" || incident.threatLevel === "high"
+              ? "bg-destructive/10"
+              : incident.threatLevel === "medium" ? "bg-warning/10" : "bg-success/10"
+          )}>
+            <AlertTriangle className={cn("h-4 w-4", getThreatColor(incident.threatLevel))} />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{incident.label}</p>
             <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Camera className="h-3 w-3" />
-                {incident.cameraName}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span suppressHydrationWarning>{timeAgo}</span>
-              </span>
+              <span className="flex items-center gap-1"><Camera className="h-3 w-3" />{incident.cameraName}</span>
+              <span className="flex items-center gap-1"><Clock className="h-3 w-3" /><span suppressHydrationWarning>{timeAgo}</span></span>
             </div>
           </div>
         </div>
-        <Badge
-          variant="outline"
-          className={cn("shrink-0 text-xs", getThreatBgColor(incident.threatLevel))}
-        >
+        <Badge variant="outline" className={cn("shrink-0 text-xs", getThreatBgColor(incident.threatLevel))}>
           {incident.threatScore}
         </Badge>
       </div>
@@ -102,38 +68,31 @@ export function IncidentCard({
         {incident.detections.map((det, i) => {
           const Icon = getDetectionIcon(det.className);
           return (
-            <span
-              key={i}
-              className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
-            >
-              <Icon className="h-3 w-3" />
-              {det.count}x {det.className}
+            <span key={i} className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
+              <Icon className="h-3 w-3" />{det.count}x {det.className}
             </span>
           );
         })}
         {isActive && !incident.acknowledged && (
-          <Badge variant="destructive" className="text-[10px] h-5">
-            Active
-          </Badge>
+          <Badge variant="destructive" className="text-[10px] h-5">Active</Badge>
+        )}
+        {incident.acknowledged && (
+          <Badge variant="outline" className="text-[10px] h-5 border-success/30 text-success">Acknowledged</Badge>
         )}
       </div>
     </button>
   );
 }
 
-// IncidentDetail
 export function IncidentDetail({
-  incident,
-  onAcknowledge,
-  onAlertAuthorities,
-  acknowledged,
+  incident, onAcknowledge, onAlertAuthorities,
 }: {
-  incident: Incident;
-  onAcknowledge?: (id: string) => void;
-  onAlertAuthorities?: (id: string) => void;
-  acknowledged?: boolean;
+  incident:             Incident;
+  onAcknowledge?:       (id: string) => void;
+  onAlertAuthorities?:  (id: string) => void;
 }) {
-  const isActive = !incident.endedAt;
+  const isActive       = !incident.endedAt;
+  const isAcknowledged = !!incident.acknowledged;
 
   return (
     <div className="flex flex-col gap-5">
@@ -141,16 +100,12 @@ export function IncidentDetail({
       <div>
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-base font-semibold text-foreground">{incident.label}</h3>
-          <Badge
-            variant="outline"
-            className={cn("shrink-0", getThreatBgColor(incident.threatLevel))}
-          >
+          <Badge variant="outline" className={cn("shrink-0", getThreatBgColor(incident.threatLevel))}>
             Score: {incident.threatScore}/100
           </Badge>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          {incident.cameraName} --{" "}
-          {formatDistanceToNow(new Date(incident.startedAt), { addSuffix: true })}
+          {incident.cameraName} · {formatDistanceToNow(new Date(incident.startedAt), { addSuffix: true })}
         </p>
       </div>
 
@@ -159,34 +114,23 @@ export function IncidentDetail({
         <div className="rounded-lg bg-secondary/50 p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted-foreground">Threat</span>
-            <span className={cn("text-sm font-bold", getThreatColor(incident.threatLevel))}>
-              {incident.threatScore}%
-            </span>
+            <span className={cn("text-sm font-bold", getThreatColor(incident.threatLevel))}>{incident.threatScore}%</span>
           </div>
-          <Progress
-            value={incident.threatScore}
-            className="h-1.5 bg-secondary [&>div]:bg-destructive"
-          />
+          <Progress value={incident.threatScore} className="h-1.5 bg-secondary [&>div]:bg-destructive" />
         </div>
         <div className="rounded-lg bg-secondary/50 p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted-foreground">Quality</span>
             <span className="text-sm font-bold text-foreground">{incident.qualityScore}%</span>
           </div>
-          <Progress
-            value={incident.qualityScore}
-            className="h-1.5 bg-secondary [&>div]:bg-primary"
-          />
+          <Progress value={incident.qualityScore} className="h-1.5 bg-secondary [&>div]:bg-primary" />
         </div>
         <div className="rounded-lg bg-secondary/50 p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted-foreground">Confidence</span>
             <span className="text-sm font-bold text-foreground">{incident.confidenceScore}%</span>
           </div>
-          <Progress
-            value={incident.confidenceScore}
-            className="h-1.5 bg-secondary [&>div]:bg-chart-2"
-          />
+          <Progress value={incident.confidenceScore} className="h-1.5 bg-secondary [&>div]:bg-chart-2" />
         </div>
       </div>
 
@@ -194,42 +138,59 @@ export function IncidentDetail({
       <div className="rounded-xl border border-border bg-secondary/30 p-4">
         <div className="flex items-center gap-2 mb-2">
           <Cpu className="h-4 w-4 text-success" />
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Edge Analysis
-          </span>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Edge Analysis</span>
         </div>
         <p className="text-sm text-foreground leading-relaxed">{incident.summaryLocal}</p>
         {incident.summaryCloud && (
           <div className="mt-3 border-t border-border pt-3">
             <div className="flex items-center gap-2 mb-2">
               <Cloud className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Cloud Verification
-              </span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cloud Verification</span>
             </div>
             <p className="text-sm text-foreground leading-relaxed">{incident.summaryCloud}</p>
           </div>
         )}
       </div>
 
-      {/* Actions */}
-      {isActive && (
-        <div className="flex items-center gap-3">
+      {/* Step 1: Acknowledge (shown when active and not yet acknowledged) */}
+      {isActive && !isAcknowledged && (
+        <div className="rounded-xl border border-border bg-secondary/30 p-4">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Review required before escalating</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Confirm you have assessed this incident before alerting authorities.
+              </p>
+            </div>
+          </div>
           <Button
-            size="sm"
-            variant="outline"
+            size="sm" variant="outline"
             onClick={() => onAcknowledge?.(incident.id)}
-            className="flex-1"
+            className="mt-3 w-full"
           >
             <Check className="h-4 w-4 mr-1.5" />
-            Acknowledge
+            I have reviewed this — Acknowledge
           </Button>
+        </div>
+      )}
+
+      {/* Step 2: Alert Authorities (shown only after acknowledged) */}
+      {isActive && isAcknowledged && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
+          <div className="flex items-start gap-3">
+            <Phone className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Incident acknowledged</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                If this requires emergency response, alert authorities now.
+              </p>
+            </div>
+          </div>
           <Button
-            size="sm"
-            variant="destructive"
+            size="sm" variant="destructive"
             onClick={() => onAlertAuthorities?.(incident.id)}
-            disabled={!acknowledged} // only works after acknowledging
-            className="flex-1"
+            className="mt-3 w-full"
           >
             <Phone className="h-4 w-4 mr-1.5" />
             Alert Authorities
