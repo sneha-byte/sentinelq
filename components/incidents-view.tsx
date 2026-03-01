@@ -10,7 +10,7 @@ import { AlertTriangle, Bell, Check } from "lucide-react";
 
 export function IncidentsView() {
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(
-    mockIncidents.find((i) => !i.endedAt) || mockIncidents[0],
+    mockIncidents.find((i) => !i.endedAt) || mockIncidents[0]
   );
   const [filter, setFilter] = useState<"all" | "active" | "resolved">("all");
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
@@ -29,9 +29,7 @@ export function IncidentsView() {
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">
-              All Incidents
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground">All Incidents</h3>
           </div>
         </div>
 
@@ -44,7 +42,7 @@ export function IncidentsView() {
                 "rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors",
                 filter === f
                   ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground",
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {f}
@@ -69,9 +67,7 @@ export function IncidentsView() {
             {filteredIncidents.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <Check className="h-10 w-10 text-success mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  No incidents found
-                </p>
+                <p className="text-sm text-muted-foreground">No incidents found</p>
               </div>
             )}
           </div>
@@ -89,6 +85,7 @@ export function IncidentsView() {
                   selectedIncident.acknowledged ||
                   acknowledged.has(selectedIncident.id),
               }}
+              acknowledged={acknowledged.has(selectedIncident.id)}
               onAcknowledge={(id) =>
                 setAcknowledged((prev) => new Set([...prev, id]))
               }
