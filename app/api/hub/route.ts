@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+/* import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -20,4 +20,4 @@ export async function POST(req: Request) {
   }
 
   return Response.json({ incident: data });
-} 
+}  */
