@@ -9,6 +9,8 @@ import { IncidentCard } from "@/components/incident-panel"
 import {
   AlertTriangle, Camera, ChevronRight, ShieldAlert,
   Siren, Lock, Eye, EyeOff, ShieldCheck, Sparkles,
+  Lightbulb, DoorOpen, Volume2,
+  Cloud, Sun, CloudRain, Wind, Thermometer,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -36,6 +38,30 @@ function buildDailyBrief(incidents: Incident[], cameras: Camera[]) {
   return { greeting, summary: `${active} active incidents require your attention out of ${total} recorded today. ${high} were high or critical. Please review when you can.`, status: "alert" as const }
 }
 
+// ── Mock weather data ─────────────────────────────────────────────────────
+const WEATHER = {
+  temp: 64,
+  condition: "Partly Cloudy",
+  humidity: 58,
+  wind: 9,
+  icon: "cloudy",
+  securityNote: "Low wind — motion sensors reliable tonight.",
+}
+
+function WeatherIcon({ type, className }: { type: string; className?: string }) {
+  if (type === "sunny") return <Sun       className={cn("h-5 w-5 text-yellow-400", className)} />
+  if (type === "rainy") return <CloudRain className={cn("h-5 w-5 text-primary",    className)} />
+  return <Cloud className={cn("h-5 w-5 text-muted-foreground", className)} />
+}
+
+// ── Quick actions ─────────────────────────────────────────────────────────
+const QUICK_ACTIONS = [
+  { id: "lights",  label: "All Lights", icon: Lightbulb, activeLabel: "Lights On",  activeColor: "border-yellow-400/40 bg-yellow-400/10 text-yellow-600" },
+  { id: "lock",    label: "Lock Doors", icon: Lock,      activeLabel: "Locked",     activeColor: "border-success/40 bg-success/10 text-success" },
+  { id: "garage",  label: "Garage",     icon: DoorOpen,  activeLabel: "Open",       activeColor: "border-primary/40 bg-primary/10 text-primary" },
+  { id: "alarm",   label: "Alarm",      icon: Volume2,   activeLabel: "Alarm On",   activeColor: "border-destructive/40 bg-destructive/10 text-destructive" },
+]
+
 const CORRECT_PIN = "1234"
 
 function PinPad({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
@@ -50,11 +76,9 @@ function PinPad({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () =
     setPin(next)
     setError(false)
     if (next.length === 4) {
-      if (next === CORRECT_PIN) {
-        setTimeout(onSuccess, 200)
-      } else {
-        setShake(true)
-        setError(true)
+      if (next === CORRECT_PIN) { setTimeout(onSuccess, 200) }
+      else {
+        setShake(true); setError(true)
         setTimeout(() => { setPin(""); setShake(false) }, 700)
       }
     }
@@ -128,17 +152,25 @@ export function DashboardView({
   const activeIncident  = incidents.find(i => !i.endedAt)
   const { greeting, summary, status } = buildDailyBrief(incidents, cameras)
 
-  const [sosStep, setSosStep] = useState<"closed" | "pin" | "confirm" | "sent">("closed")
+  const [sosStep,       setSosStep]       = useState<"closed" | "pin" | "confirm" | "sent">("closed")
+  const [activeActions, setActiveActions] = useState<Set<string>>(new Set())
+
+  function toggleAction(id: string) {
+    setActiveActions(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   return (
     <div className="flex flex-col gap-6">
 
-      {/* ── Hero greeting card ── */}
+      {/* ── Hero greeting ── */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15 p-6">
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/8 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-6 right-16 h-24 w-24 rounded-full bg-primary/6 blur-xl" />
-
-        <div className="relative flex items-start justify-between gap-4 flex-wrap">
+        <div className="relative flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="h-4 w-4 text-primary" />
@@ -146,19 +178,62 @@ export function DashboardView({
             </div>
             <h2 className="text-2xl font-bold text-foreground">{greeting}, User</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground max-w-lg">{summary}</p>
+            <div className={cn(
+              "mt-4 inline-flex items-center gap-2 rounded-xl px-3.5 py-2 border",
+              status === "clear"  ? "bg-success/10 border-success/20 text-success" :
+              status === "warn"   ? "bg-warning/10 border-warning/20 text-warning" :
+                                    "bg-destructive/10 border-destructive/20 text-destructive"
+            )}>
+              <ShieldCheck className="h-4 w-4" />
+              <span className="text-sm font-semibold">
+                {status === "clear" ? "All Clear" : status === "warn" ? "Heads Up" : "Needs Attention"}
+              </span>
+            </div>
           </div>
-          <div className={cn(
-            "flex items-center gap-2 rounded-xl px-3.5 py-2 shrink-0 border",
-            status === "clear"
-              ? "bg-success/10 border-success/20 text-success"
-              : status === "warn"
-              ? "bg-warning/10 border-warning/20 text-warning"
-              : "bg-destructive/10 border-destructive/20 text-destructive"
-          )}>
-            <ShieldCheck className="h-4 w-4" />
-            <span className="text-sm font-semibold">
-              {status === "clear" ? "All Clear" : status === "warn" ? "Heads Up" : "Needs Attention"}
-            </span>
+          {/* Mascot */}
+          <div className="shrink-0 hidden sm:block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mascot.png" alt="SentinelQ" className="h-36 w-auto object-contain drop-shadow-sm" />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Weather + Quick Actions row ── */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr]">
+
+        {/* Weather card */}
+        <div className="rounded-xl border border-border bg-card px-5 py-4 flex items-center gap-5 min-w-[220px]">
+          <WeatherIcon type={WEATHER.icon} className="h-10 w-10 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-end gap-2">
+              <span className="text-3xl font-bold text-foreground">{WEATHER.temp}°</span>
+              <span className="text-sm text-muted-foreground pb-1">{WEATHER.condition}</span>
+            </div>
+            <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><Wind className="h-3 w-3" />{WEATHER.wind} mph</span>
+              <span className="flex items-center gap-1"><Thermometer className="h-3 w-3" />{WEATHER.humidity}% humidity</span>
+            </div>
+            <p className="mt-1.5 text-[11px] text-primary font-medium">{WEATHER.securityNote}</p>
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <div className="rounded-xl border border-border bg-card px-5 py-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Quick Actions</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {QUICK_ACTIONS.map(({ id, label, icon: Icon, activeLabel, activeColor }) => {
+              const isOn = activeActions.has(id)
+              return (
+                <button key={id} onClick={() => toggleAction(id)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-xl border p-3 text-xs font-medium transition-all",
+                    isOn ? activeColor : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                  )}>
+                  <Icon className="h-5 w-5" />
+                  {isOn ? activeLabel : label}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -169,9 +244,9 @@ export function DashboardView({
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10">
             <ShieldAlert className="h-5 w-5 text-destructive" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground">{activeIncident.label}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <p className="text-sm font-semibold text-foreground truncate">{activeIncident.label}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {activeIncident.cameraName} · Threat score: {activeIncident.threatScore}/100
             </p>
           </div>
@@ -234,10 +309,8 @@ export function DashboardView({
               <p className="text-xs text-muted-foreground">Can't call? Transmit your location and footage silently. PIN required.</p>
             </div>
           </div>
-          <button
-            onClick={() => setSosStep("pin")}
-            className="shrink-0 rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all"
-          >
+          <button onClick={() => setSosStep("pin")}
+            className="shrink-0 rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all">
             Send SOS
           </button>
         </div>
@@ -279,7 +352,9 @@ export function DashboardView({
                     </li>
                   ))}
                 </ul>
-                <p className="text-center text-xs text-muted-foreground">Only use this in a genuine emergency. Emergency services will be dispatched to your location.</p>
+                <p className="text-center text-xs text-muted-foreground">
+                  Only use this in a genuine emergency. Emergency services will be dispatched to your location.
+                </p>
                 <button onClick={() => setSosStep("sent")}
                   className="w-full rounded-xl bg-destructive py-3.5 text-sm font-bold text-white shadow-sm hover:opacity-90 transition-opacity">
                   Confirm — Send SOS Now
@@ -298,7 +373,7 @@ export function DashboardView({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-foreground">SOS Transmitted</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Emergency services have your location and footage. Help is on the way. Stay as safe as you can.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Emergency services have your location and footage. Help is on the way.</p>
                 </div>
                 <div className="w-full rounded-xl bg-secondary/50 border border-border p-4 text-left text-sm space-y-2">
                   <div className="flex justify-between">
@@ -311,7 +386,9 @@ export function DashboardView({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Case ID</span>
-                    <span className="font-mono text-xs font-semibold text-foreground">#SQ-{Date.now().toString().slice(-6)}</span>
+                    <span className="font-mono text-xs font-semibold text-foreground" suppressHydrationWarning>
+                      #SQ-{Date.now().toString().slice(-6)}
+                    </span>
                   </div>
                 </div>
                 <button onClick={() => setSosStep("closed")}
