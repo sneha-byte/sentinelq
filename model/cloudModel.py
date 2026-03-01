@@ -6,6 +6,8 @@ import time
 import numpy as np
 from PIL import Image, ImageEnhance
 import io
+import argparse
+import os
 
 # --- Config ----------------------------------------
 API_URL = "https://your-app.vercel.app/api/hub/incidents"
@@ -133,74 +135,90 @@ def post_incident(result, detections: list[dict], is_dark: bool):
 
 # --- Main loop ------------------------------------
 def main():
+    parser = argparse.ArgumentParser(description="SentinelQ CV - run on webcam or video files")
+    
+    parser.add_argument(
+        "--source",
+        type=str,
+        required=True,
+        help="Video source: 0 for webcam, or path to a video file (mp4, avi, mov, mkv, etc.)"
+    )
+    
+    args = parser.parse_args()
+    
+    if not os.path.isfile(args.source):
+        raise FileNotFoundError(f"Video file not found: {args.source}")
+    
     model = YOLO("yolov8n.pt")
     last_incident_time = 0
     
-    # cv2 opens the camera — more reliable on macOS than YOLO's LoadStreams
-    cap = cv2.VideoCapture(0)
-
+    cap = cv2.VideoCapture(args.source) # video capture device
+    
     if not cap.isOpened():
-        print("❌ Camera not accessible. Check System Settings → Privacy & Security → Camera")
+        print(f"❌ Could not open video file: {args.source}")
         return
-
-    print("✅ SentinelQ CV running — press Ctrl+C to quit\n")
-
+    
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    print(f"✅ Processing: {os.path.basename(args.source)} ({total_frames} frames @ {fps:.1f} fps)\n")
+    
+    frame_num = 0
+    
     while True:
-        ret, frame = cap.read()
+        ret, frame = cap.read() # read the current frame
         if not ret:
-            print("⚠️  Failed to read frame, retrying...")
-            continue
-
+            print("Finished processing video.")
+            break
+        
+        frame_num += 1
+        print(f"\rFrame {frame_num}/{total_frames}", end="", flush=True)
+        
         is_dark = is_low_light(frame)
-
-        # Enhance frame before passing to YOLO if dark
         input_frame = enhance_frame(frame) if is_dark else frame
-
-        # Pass frame directly to YOLO — no LoadStreams, no camera source issues
+        
         results = model.predict(input_frame, verbose=False)
-        result  = results[0]
-
+        result = results[0]
+        
         if result.boxes is None:
             continue
-
+        
         detections = []
+        
         for box in result.boxes:
             cls_id = int(box.cls)
-            conf   = float(box.conf)
-
+            conf = float(box.conf)
+            
             if cls_id not in ALL_TRACKED or conf < CONFIDENCE_THRESHOLD:
                 continue
-
+            
             category = (
-                "person"  if cls_id in PERSON_CLASSES else
-                "animal"  if cls_id in ANIMAL_CLASSES  else
+                "person" if cls_id in PERSON_CLASSES else
+                "animal" if cls_id in ANIMAL_CLASSES else
                 "vehicle"
             )
-
+            
             detections.append({
-                "label":      ALL_TRACKED[cls_id],
-                "category":   category,
-                "confidence": round(conf, 3),
-                "bbox":       [round(x) for x in box.xyxy[0].tolist()],
-                "track_id":   None,
-                "class_id":   cls_id,
+                "label": ALL_TRACKED[cls_id],
+                "category": category,
+                "confience": round(conf, 3),
+                "bbox": [round(x) for x in box.xyxy[0].tolist()],
+                "track_id": None,
+                "class_id": cls_id,
             })
-
+            
         now = time.time()
         if detections and (now - last_incident_time) > COOLDOWN_SECONDS:
             post_incident(result, detections, is_dark)
             last_incident_time = now
-
-        # Show annotated frame using YOLO's plot — no cv2.imshow needed
+        
         annotated = result.plot()
         cv2.imshow("SentinelQ", annotated)
-
-        # Press Q to quit
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
-    cap.release()
-    cv2.destroyAllWindows()
+        
+        cap.release()
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
