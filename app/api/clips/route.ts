@@ -5,11 +5,7 @@ import { NextResponse } from "next/server";
  * GET /api/clips
  * Returns public URLs for the N most-recent clip.mp4 files in the `incidents`
  * storage bucket that are ≥ MIN_CLIP_BYTES (filters out placeholder/empty files).
- *
- * We always use the folder-listing path so we can verify both existence and size.
- * The incident_media table path was removed because it returns rows for every
- * incident regardless of whether a real file was actually uploaded, causing the
- * video player to cycle rapidly through hundreds of broken URLs.
+ * Uses the service role key to bypass Supabase RLS.
  */
 export async function GET() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -21,16 +17,11 @@ export async function GET() {
     auth: { persistSession: false },
   });
 
-  // Only return clips with substantial content (rules out placeholder files).
-  const MIN_CLIP_BYTES = 500_000; // 500 KB — real 30-second clips are 1–5 MB
-
-  // How many of the most-recent event folders to scan.
-  // Keeping this small means we only surface recently-uploaded (H.264) clips
-  // while avoiding the long tail of legacy mpeg4 files.
-  const MAX_FOLDERS = 30;
+  const MIN_CLIP_BYTES = 500_000; // 500 KB — real clips are 1–5 MB
+  const MAX_FOLDERS    = 30;      // only scan the most recent N folders
 
   try {
-    // ── List top-level folders (each is a Unix-ms timestamp) ──────────────────
+    // List top-level folders (each is a Unix-ms timestamp)
     const { data: topLevel, error: topErr } = await admin.storage
       .from("incidents")
       .list("", { limit: 1000 });
@@ -43,39 +34,35 @@ export async function GET() {
     // Keep only folders (no extension), sorted newest-first
     const folders = (topLevel ?? [])
       .filter(
-        (f) =>
+        f =>
           f.name &&
           f.name !== ".emptyFolderPlaceholder" &&
-          !f.name.endsWith(".mp4") &&
-          !f.name.endsWith(".jpg") &&
-          !f.name.endsWith(".png") &&
-          !f.name.endsWith(".json")
+          !f.name.includes(".")
       )
       .sort((a, b) => {
         const na = parseInt(a.name, 10) || 0;
         const nb = parseInt(b.name, 10) || 0;
-        return nb - na; // newest first
+        return nb - na;
       })
-      .slice(0, MAX_FOLDERS); // only scan the most recent N folders
+      .slice(0, MAX_FOLDERS);
 
     if (folders.length === 0) {
-      console.log("[/api/clips] no folders found in incidents bucket");
       return NextResponse.json({ urls: [] });
     }
 
-    // ── For each folder, verify clip.mp4 exists and is large enough ──────────
+    // For each folder, verify clip.mp4 exists and is large enough
     const BATCH = 10;
-    const validUrls: { name: string; url: string }[] = [];
+    const validUrls: string[] = [];
 
     for (let i = 0; i < folders.length; i += BATCH) {
       const batch = folders.slice(i, i + BATCH);
       const results = await Promise.all(
-        batch.map(async (folder) => {
+        batch.map(async folder => {
           const { data: files } = await admin.storage
             .from("incidents")
             .list(folder.name, { limit: 20 });
 
-          const clipFile = (files ?? []).find((f) => f.name === "clip.mp4");
+          const clipFile = (files ?? []).find(f => f.name === "clip.mp4");
           const sizeBytes: number =
             (clipFile?.metadata as { size?: number } | undefined)?.size ?? 0;
 
@@ -85,21 +72,19 @@ export async function GET() {
             .from("incidents")
             .getPublicUrl(`${folder.name}/clip.mp4`);
 
-          return { name: folder.name, url: data.publicUrl };
+          return data.publicUrl;
         })
       );
 
       for (const r of results) {
-        if (r !== null) validUrls.push(r);
+        if (r !== null) validUrls.push(r as string);
       }
     }
 
-    // Already sorted newest-first from the folders sort above
-    const urls = validUrls.map((v) => v.url);
     console.log(
-      `[/api/clips] returning ${urls.length} clip URLs from ${folders.length} most-recent folders (≥${MIN_CLIP_BYTES / 1000}KB)`
+      `[/api/clips] returning ${validUrls.length} clip URLs (≥${MIN_CLIP_BYTES / 1000}KB)`
     );
-    return NextResponse.json({ urls });
+    return NextResponse.json({ urls: validUrls });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[/api/clips] unexpected error:", msg);

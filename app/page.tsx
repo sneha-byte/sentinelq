@@ -1,24 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { TopHeader } from "@/components/top-header";
+import { AppSidebar }    from "@/components/app-sidebar";
+import { TopHeader }     from "@/components/top-header";
 import { DashboardView } from "@/components/dashboard-view";
-import { CamerasView } from "@/components/cameras-view";
+import { CamerasView }   from "@/components/cameras-view";
 import { IncidentsView } from "@/components/incidents-view";
 import { AnalyticsView } from "@/components/analytics-view";
-import { SettingsView } from "@/components/settings-view";
+import { SettingsView }  from "@/components/settings-view";
 import { NeighborsView } from "@/components/neighbors-view";
-import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { AIAssistantView } from "@/components/ai-assistant-view";
-import { SmartHomeView } from "@/components/smart-home-preview";
-import { incidents as mockIncidents } from "@/lib/mock-data";
+import { SmartHomeView }   from "@/components/smart-home-preview";
+import { useDashboardData } from "@/hooks/use-dashboard-data";
 
 export default function SentinelQDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { hub, cameras, incidents, analytics, clipUrls, loading } = useDashboardData();
 
-  // ── Shared persistent state (survives tab switches) ────────────────────────
+  // ── Shared persistent state (survives tab switches) ──────────────────────
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
   const [alertSent,    setAlertSent]    = useState<Set<string>>(new Set());
   const [lightStates,  setLightStates]  = useState<Record<string, boolean>>({});
@@ -30,21 +29,6 @@ export default function SentinelQDashboard() {
   function toggleAutoMotion(id: string) { setAutoMotion(prev => ({ ...prev, [id]: !prev[id] })); }
 
   const unresolvedCount = incidents.filter(
-    i => !i.endedAt && !i.acknowledged && !acknowledged.has(i.id)
-  ).length;
-
-  // ── Shared persistent state ───────────────────────────────────────────────
-  const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
-  const [alertSent,    setAlertSent]    = useState<Set<string>>(new Set());
-  const [lightStates,  setLightStates]  = useState<Record<string, boolean>>({});
-  const [autoMotion,   setAutoMotion]   = useState<Record<string, boolean>>({});
-
-  function acknowledge(id: string)      { setAcknowledged(prev => new Set([...prev, id])); }
-  function sendAlert(id: string)        { setAlertSent(prev => new Set([...prev, id])); }
-  function toggleLight(id: string)      { setLightStates(prev => ({ ...prev, [id]: !prev[id] })); }
-  function toggleAutoMotion(id: string) { setAutoMotion(prev => ({ ...prev, [id]: !prev[id] })); }
-
-  const unresolvedCount = mockIncidents.filter(
     i => !i.endedAt && !i.acknowledged && !acknowledged.has(i.id)
   ).length;
 
@@ -71,10 +55,7 @@ export default function SentinelQDashboard() {
                 cameras={cameras}
                 incidents={incidents}
                 clipUrls={clipUrls}
-              <DashboardView onNavigate={setActiveTab} />
-            </div>
-            <div className={activeTab === "cameras" ? "" : "hidden"}>
-              <CamerasView
+                acknowledged={acknowledged}
                 lightStates={lightStates}
                 autoMotion={autoMotion}
                 onToggleLight={toggleLight}
@@ -97,11 +78,7 @@ export default function SentinelQDashboard() {
               <AnalyticsView analytics={analytics} />
             </div>
             <div className={activeTab === "settings" ? "" : "hidden"}>
-              <SettingsView hub={hub} />
-              <AnalyticsView />
-            </div>
-            <div className={activeTab === "settings" ? "" : "hidden"}>
-              <SettingsView />
+              <SettingsView hub={hub ?? undefined} />
             </div>
             <div className={activeTab === "smarthome" ? "" : "hidden"}>
               <SmartHomeView />

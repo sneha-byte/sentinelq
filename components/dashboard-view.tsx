@@ -1,31 +1,30 @@
 "use client"
 
 import { useState } from "react"
-import type { Camera, Incident } from "@/lib/mock-data"
+import type { Camera as CameraType, Incident } from "@/lib/mock-data"
 import { cameras as mockCameras, incidents as mockIncidents } from "@/lib/mock-data"
-import { useState, useEffect } from "react"
-import { cameras, incidents } from "@/lib/mock-data"
-import { StatsOverview } from "@/components/stats-overview"
+import { StatsOverview }  from "@/components/stats-overview"
 import { CameraFeedCard } from "@/components/camera-feed-card"
-import { IncidentCard } from "@/components/incident-panel"
+import { IncidentCard }   from "@/components/incident-panel"
 import {
   AlertTriangle, Camera, ChevronRight, ShieldAlert,
   Siren, Lock, Eye, EyeOff, ShieldCheck, Sparkles,
   Lightbulb, DoorOpen, Volume2,
-  Lightbulb, DoorOpen, Volume2, Shield,
   Cloud, Sun, CloudRain, Wind, Thermometer,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface DashboardViewProps {
-  onNavigate: (tab: string) => void
-  cameras?: Camera[]
-  incidents?: Incident[]
-  clipUrls?: string[]
+  onNavigate:  (tab: string) => void
+  cameras?:    CameraType[]
+  incidents?:  Incident[]
+  clipUrls?:   string[]
 }
 
-function buildDailyBrief(incidents: Incident[], cameras: Camera[]) {
+// ── Daily brief ───────────────────────────────────────────────────────────────
+function buildDailyBrief(incidents: Incident[], cameras: CameraType[]) {
   const total    = incidents.length
   const active   = incidents.filter(i => !i.endedAt).length
   const high     = incidents.filter(i => i.threatLevel === "high" || i.threatLevel === "critical").length
@@ -33,6 +32,7 @@ function buildDailyBrief(incidents: Incident[], cameras: Camera[]) {
   const online   = cameras.filter(c => c.status === "online").length
   const hour     = new Date().getHours()
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"
+
   if (active === 0 && high === 0)
     return { greeting, summary: `All ${total} incidents resolved. ${online} cameras are live and no active threats detected. Your property is secure.`, status: "clear" as const }
   if (active === 1)
@@ -40,7 +40,7 @@ function buildDailyBrief(incidents: Incident[], cameras: Camera[]) {
   return { greeting, summary: `${active} active incidents require your attention out of ${total} recorded today. ${high} were high or critical. Please review when you can.`, status: "alert" as const }
 }
 
-// ── Mock weather data ─────────────────────────────────────────────────────
+// ── Weather (mock) ────────────────────────────────────────────────────────────
 const WEATHER = {
   temp: 64,
   condition: "Partly Cloudy",
@@ -56,20 +56,21 @@ function WeatherIcon({ type, className }: { type: string; className?: string }) 
   return <Cloud className={cn("h-5 w-5 text-muted-foreground", className)} />
 }
 
-// ── Quick actions ─────────────────────────────────────────────────────────
+// ── Quick actions ─────────────────────────────────────────────────────────────
 const QUICK_ACTIONS = [
-  { id: "lights",  label: "All Lights", icon: Lightbulb, activeLabel: "Lights On",  activeColor: "border-yellow-400/40 bg-yellow-400/10 text-yellow-600" },
-  { id: "lock",    label: "Lock Doors", icon: Lock,      activeLabel: "Locked",     activeColor: "border-success/40 bg-success/10 text-success" },
-  { id: "garage",  label: "Garage",     icon: DoorOpen,  activeLabel: "Open",       activeColor: "border-primary/40 bg-primary/10 text-primary" },
-  { id: "alarm",   label: "Alarm",      icon: Volume2,   activeLabel: "Alarm On",   activeColor: "border-destructive/40 bg-destructive/10 text-destructive" },
+  { id: "lights", label: "All Lights", icon: Lightbulb, activeLabel: "Lights On", activeColor: "border-yellow-400/40 bg-yellow-400/10 text-yellow-600" },
+  { id: "lock",   label: "Lock Doors", icon: Lock,      activeLabel: "Locked",    activeColor: "border-success/40 bg-success/10 text-success" },
+  { id: "garage", label: "Garage",     icon: DoorOpen,  activeLabel: "Open",      activeColor: "border-primary/40 bg-primary/10 text-primary" },
+  { id: "alarm",  label: "Alarm",      icon: Volume2,   activeLabel: "Alarm On",  activeColor: "border-destructive/40 bg-destructive/10 text-destructive" },
 ]
 
+// ── PIN pad ───────────────────────────────────────────────────────────────────
 const CORRECT_PIN = "1234"
 
 function PinPad({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
-  const [pin, setPin]         = useState("")
-  const [error, setError]     = useState(false)
-  const [shake, setShake]     = useState(false)
+  const [pin,     setPin]     = useState("")
+  const [error,   setError]   = useState(false)
+  const [shake,   setShake]   = useState(false)
   const [showPin, setShowPin] = useState(false)
 
   function press(digit: string) {
@@ -78,8 +79,9 @@ function PinPad({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () =
     setPin(next)
     setError(false)
     if (next.length === 4) {
-      if (next === CORRECT_PIN) { setTimeout(onSuccess, 200) }
-      else {
+      if (next === CORRECT_PIN) {
+        setTimeout(onSuccess, 200)
+      } else {
         setShake(true); setError(true)
         setTimeout(() => { setPin(""); setShake(false) }, 700)
       }
@@ -99,8 +101,11 @@ function PinPad({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () =
       </div>
       <div className={cn("flex gap-3", shake && "animate-[wiggle_0.3s_ease-in-out_2]")}>
         {[0,1,2,3].map(i => (
-          <div key={i} className={cn("h-4 w-4 rounded-full border-2 transition-all duration-150",
-            pin.length > i ? error ? "border-destructive bg-destructive" : "border-primary bg-primary" : "border-border bg-transparent"
+          <div key={i} className={cn(
+            "h-4 w-4 rounded-full border-2 transition-all duration-150",
+            pin.length > i
+              ? error ? "border-destructive bg-destructive" : "border-primary bg-primary"
+              : "border-border bg-transparent"
           )} />
         ))}
       </div>
@@ -109,59 +114,42 @@ function PinPad({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () =
         {digits.map((d, i) => (
           d === "" ? <div key={i} /> :
           d === "⌫" ? (
-            <button key={i} onClick={del} className="flex h-12 items-center justify-center rounded-xl border border-border bg-secondary text-sm font-medium text-muted-foreground hover:bg-secondary/80 transition-colors">⌫</button>
+            <button key={i} onClick={del}
+              className="flex h-12 items-center justify-center rounded-xl border border-border bg-secondary text-sm font-medium text-muted-foreground hover:bg-secondary/80 transition-colors">
+              ⌫
+            </button>
           ) : (
-            <button key={i} onClick={() => press(d)} className="flex h-12 items-center justify-center rounded-xl border border-border bg-card text-base font-semibold text-foreground hover:bg-primary/5 hover:border-primary/30 transition-colors">{d}</button>
+            <button key={i} onClick={() => press(d)}
+              className="flex h-12 items-center justify-center rounded-xl border border-border bg-card text-base font-semibold text-foreground hover:bg-primary/5 hover:border-primary/30 transition-colors">
+              {d}
+            </button>
           )
         ))}
       </div>
-      <button onClick={() => setShowPin(s => !s)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+      <button onClick={() => setShowPin(s => !s)}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
         {showPin ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         {showPin ? `PIN hint: ${CORRECT_PIN}` : "Show PIN hint"}
       </button>
-      <button onClick={onCancel} className="w-full rounded-xl border border-border py-3 text-sm font-medium text-muted-foreground hover:bg-secondary/50 transition-colors">Cancel</button>
+      <button onClick={onCancel}
+        className="w-full rounded-xl border border-border py-3 text-sm font-medium text-muted-foreground hover:bg-secondary/50 transition-colors">
+        Cancel
+      </button>
     </div>
   )
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
 export function DashboardView({
   onNavigate,
-  cameras = mockCameras,
+  cameras   = mockCameras as CameraType[],
   incidents = mockIncidents,
-  clipUrls = [],
+  clipUrls  = [],
 }: DashboardViewProps) {
-// ── Mock weather data ─────────────────────────────────────────────────────
-const WEATHER = {
-  temp: 64,
-  condition: "Partly Cloudy",
-  humidity: 58,
-  wind: 9,
-  icon: "cloudy",
-  securityNote: "Low wind - motion sensors reliable tonight.",
-}
-
-function WeatherIcon({ type, className }: { type: string; className?: string }) {
-  if (type === "sunny")  return <Sun       className={cn("h-5 w-5 text-yellow-400", className)} />
-  if (type === "rainy")  return <CloudRain className={cn("h-5 w-5 text-primary",    className)} />
-  return <Cloud className={cn("h-5 w-5 text-muted-foreground", className)} />
-}
-
-// ── Quick actions ─────────────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  { id: "lights",  label: "All Lights",  icon: Lightbulb, activeLabel: "Lights On",  activeColor: "border-yellow-400/40 bg-yellow-400/10 text-yellow-600" },
-  { id: "lock",    label: "Lock Doors",  icon: Lock,      activeLabel: "Locked",      activeColor: "border-success/40 bg-success/10 text-success" },
-  { id: "garage",  label: "Garage",      icon: DoorOpen,  activeLabel: "Open",        activeColor: "border-primary/40 bg-primary/10 text-primary" },
-  { id: "alarm",   label: "Alarm",       icon: Volume2,   activeLabel: "Alarm On",    activeColor: "border-destructive/40 bg-destructive/10 text-destructive" },
-]
-
-export function DashboardView({ onNavigate }: DashboardViewProps) {
   const topCameras      = cameras.filter(c => c.status === "online").slice(0, 4)
   const recentIncidents = incidents.slice(0, 3)
   const activeIncident  = incidents.find(i => !i.endedAt)
   const { greeting, summary, status } = buildDailyBrief(incidents, cameras)
-
-  const [sosStep,       setSosStep]       = useState<"closed" | "pin" | "confirm" | "sent">("closed")
-  const [activeActions, setActiveActions] = useState<Set<string>>(new Set())
 
   const [sosStep,       setSosStep]       = useState<"closed" | "pin" | "confirm" | "sent">("closed")
   const [activeActions, setActiveActions] = useState<Set<string>>(new Set())
@@ -191,9 +179,9 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground max-w-lg">{summary}</p>
             <div className={cn(
               "mt-4 inline-flex items-center gap-2 rounded-xl px-3.5 py-2 border",
-              status === "clear"  ? "bg-success/10 border-success/20 text-success" :
-              status === "warn"   ? "bg-warning/10 border-warning/20 text-warning" :
-                                    "bg-destructive/10 border-destructive/20 text-destructive"
+              status === "clear" ? "bg-success/10 border-success/20 text-success" :
+              status === "warn"  ? "bg-warning/10 border-warning/20 text-warning" :
+                                   "bg-destructive/10 border-destructive/20 text-destructive"
             )}>
               <ShieldCheck className="h-4 w-4" />
               <span className="text-sm font-semibold">
@@ -211,7 +199,6 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
       {/* ── Weather + Quick Actions row ── */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_1fr]">
-
         {/* Weather card */}
         <div className="rounded-xl border border-border bg-card px-5 py-4 flex items-center gap-5 min-w-[220px]">
           <WeatherIcon type={WEATHER.icon} className="h-10 w-10 shrink-0" />
@@ -260,7 +247,6 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
             <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {activeIncident.cameraName} · Threat score: {activeIncident.threatScore}/100
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">{activeIncident.cameraName} · Threat score: {activeIncident.threatScore}/100</p>
           </div>
           <Button size="sm" variant="destructive" onClick={() => onNavigate("incidents")} className="shrink-0 rounded-lg">
             Review <ChevronRight className="h-4 w-4 ml-1" />
@@ -330,10 +316,18 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
       {/* ── SOS Modal ── */}
       {sosStep !== "closed" && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm p-4 md:items-center"
-          onClick={() => { if (sosStep !== "sent") setSosStep("closed") }}>
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            {sosStep === "pin" && <PinPad onSuccess={() => setSosStep("confirm")} onCancel={() => setSosStep("closed")} />}
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm p-4 md:items-center"
+          onClick={() => { if (sosStep !== "sent") setSosStep("closed") }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {sosStep === "pin" && (
+              <PinPad onSuccess={() => setSosStep("confirm")} onCancel={() => setSosStep("closed")} />
+            )}
+
             {sosStep === "confirm" && (
               <div className="flex flex-col gap-5">
                 <div className="text-center">
@@ -356,14 +350,15 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                 </p>
                 <button onClick={() => setSosStep("sent")}
                   className="w-full rounded-xl bg-destructive py-3.5 text-sm font-bold text-white shadow-sm hover:opacity-90 transition-opacity">
-                <button onClick={() => setSosStep("sent")} className="w-full rounded-xl bg-destructive py-3.5 text-sm font-bold text-white shadow-sm hover:opacity-90 transition-opacity">
                   Confirm — Send SOS Now
                 </button>
-                <button onClick={() => setSosStep("closed")} className="w-full rounded-xl border border-border py-3 text-sm font-medium text-muted-foreground hover:bg-secondary/50 transition-colors">
+                <button onClick={() => setSosStep("closed")}
+                  className="w-full rounded-xl border border-border py-3 text-sm font-medium text-muted-foreground hover:bg-secondary/50 transition-colors">
                   Cancel
                 </button>
               </div>
             )}
+
             {sosStep === "sent" && (
               <div className="flex flex-col items-center gap-4 py-2 text-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-success/10 border border-success/20">
@@ -388,11 +383,11 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                       #SQ-{Date.now().toString().slice(-6)}
                     </span>
                   </div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Dispatch confirmed</span><span className="font-semibold text-success">Yes</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Estimated ETA</span><span className="font-semibold text-foreground">~8 minutes</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Case ID</span><span className="font-mono text-xs font-semibold text-foreground" suppressHydrationWarning>#SQ-{Date.now().toString().slice(-6)}</span></div>
                 </div>
-                <button onClick={() => setSosStep("closed")} className="w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground">Close</button>
+                <button onClick={() => setSosStep("closed")}
+                  className="w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground">
+                  Close
+                </button>
               </div>
             )}
           </div>

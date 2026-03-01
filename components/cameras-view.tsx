@@ -17,6 +17,7 @@ interface CamerasViewProps {
   cameras?: Camera[];
   incidents?: Incident[];
   clipUrls?: string[];
+  acknowledged?: Set<string>;
   lightStates?: Record<string, boolean>;
   autoMotion?: Record<string, boolean>;
   onToggleLight?: (cameraId: string) => void;
@@ -27,6 +28,7 @@ export function CamerasView({
   cameras = mockCameras,
   incidents = mockIncidents,
   clipUrls = [],
+  acknowledged: acknowledgedProp,
   lightStates = {},
   autoMotion = {},
   onToggleLight = () => {},
@@ -36,7 +38,8 @@ export function CamerasView({
   const [filter, setFilter] = useState<"all" | "online" | "offline">("all");
   const [selectedCamId, setSelectedCamId] = useState<string | null>(null);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
-  const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
+  const [localAcknowledged, setLocalAcknowledged] = useState<Set<string>>(new Set());
+  const acknowledged = acknowledgedProp ?? localAcknowledged;
 
   const [localLightStates, setLocalLightStates] = useState<Record<string, boolean>>(lightStates);
   const [localAutoMotion, setLocalAutoMotion] = useState<Record<string, boolean>>(autoMotion);
@@ -266,7 +269,7 @@ export function CamerasView({
                     ...selectedIncident,
                     acknowledged: selectedIncident.acknowledged || acknowledged.has(selectedIncident.id),
                   }}
-                  onAcknowledge={(id) => setAcknowledged((prev) => new Set([...prev, id]))}
+                  onAcknowledge={(id) => setLocalAcknowledged((prev) => new Set([...prev, id]))}
                   onAlertAuthorities={() => {}}
                 />
               ) : (
@@ -293,7 +296,7 @@ export function CamerasView({
                       ...selectedIncident,
                       acknowledged: selectedIncident.acknowledged || acknowledged.has(selectedIncident.id),
                     }}
-                    onAcknowledge={(id) => setAcknowledged((prev) => new Set([...prev, id]))}
+                    onAcknowledge={(id) => setLocalAcknowledged((prev) => new Set([...prev, id]))}
                     onAlertAuthorities={() => {}}
                   />
                 </div>

@@ -220,7 +220,7 @@ export function CameraFeedCard({
 
       const cl = 6
       ctx.lineWidth = 2.5
-      const corners: [number, number, number, number][] = [
+      const corners: [number, number, number, number, number, number][] = [
         [bx, by + cl, bx, by, bx + cl, by],
         [bx + bw - cl, by, bx + bw, by, bx + bw, by + cl],
         [bx, by + bh - cl, bx, by + bh, bx + cl, by + bh],
