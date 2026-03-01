@@ -27,8 +27,8 @@ export default function SentinelQDashboard() {
             )}
             {activeTab === "cameras" && <CamerasView />}
             {activeTab === "incidents" && <IncidentsView />}
-            {activeTab === "analytics" && <AnalyticsView />}
             {activeTab === "neighbors" && <NeighborsView />}
+            {activeTab === "analytics" && <AnalyticsView />}
             {activeTab === "settings" && <SettingsView />}
           </div>
         </main>
