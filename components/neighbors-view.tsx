@@ -27,7 +27,9 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { incidents } from "@/lib/mock-data";
 
+// ================= TYPES =================
 type Urgency = "low" | "medium" | "high";
 type Category = "person" | "vehicle" | "noise" | "other";
 
@@ -47,6 +49,7 @@ interface NeighborPost {
   sightings: number;
 }
 
+// ================= MOCK POSTS =================
 const MOCK_POSTS: NeighborPost[] = [
   {
     id: "np-1",
@@ -80,72 +83,9 @@ const MOCK_POSTS: NeighborPost[] = [
     comments: 3,
     sightings: 5,
   },
-  {
-    id: "np-3",
-    author: "Linda R.",
-    initials: "LR",
-    avatarColor: "bg-chart-3",
-    location: "Elm Park",
-    timeAgo: "1 hour ago",
-    category: "other",
-    urgency: "low",
-    title: "Broken streetlight near the park",
-    description:
-      "The streetlight at the south entrance of Elm Park has been out for two nights now. Makes the whole corner really dark. Already reported to the city.",
-    upvotes: 22,
-    comments: 4,
-    sightings: 0,
-  },
-  {
-    id: "np-4",
-    author: "Carlos D.",
-    initials: "CD",
-    avatarColor: "bg-chart-5",
-    location: "Birch Lane",
-    timeAgo: "2 hours ago",
-    category: "noise",
-    urgency: "medium",
-    title: "Loud banging noises from vacant house",
-    description:
-      "The house at 42 Birch Lane has been vacant for months, but I've been hearing banging noises from inside around midnight the last two nights. Could be animals, could be squatters.",
-    upvotes: 11,
-    comments: 8,
-    sightings: 2,
-  },
-  {
-    id: "np-5",
-    author: "Priya K.",
-    initials: "PK",
-    avatarColor: "bg-primary",
-    location: "Cedar Ave & 2nd St",
-    timeAgo: "3 hours ago",
-    category: "person",
-    urgency: "low",
-    title: "Door-to-door solicitor without ID",
-    description:
-      "Someone claiming to be from a utility company knocked on my door but didn't have a badge or ID when I asked. Politely declined and they moved on. Just a heads up.",
-    upvotes: 6,
-    comments: 2,
-    sightings: 1,
-  },
-  {
-    id: "np-6",
-    author: "Mike B.",
-    initials: "MB",
-    avatarColor: "bg-chart-2",
-    location: "Parking Lot behind Main St",
-    timeAgo: "5 hours ago",
-    category: "vehicle",
-    urgency: "low",
-    title: "Car with out-of-state plates idling",
-    description:
-      "Blue sedan with out-of-state plates has been idling in the Main Street lot for about an hour. Probably nothing, but figured I'd mention it since we had break-ins last week.",
-    upvotes: 3,
-    comments: 1,
-    sightings: 0,
-  },
 ];
 
+// ================= CONFIGS =================
 const urgencyConfig: Record<Urgency, { label: string; className: string }> = {
   low: { label: "Low", className: "bg-muted text-muted-foreground" },
   medium: { label: "Medium", className: "bg-warning/10 text-warning" },
@@ -159,6 +99,7 @@ const categoryConfig: Record<Category, { label: string; icon: typeof User }> = {
   other: { label: "Other", icon: HelpCircle },
 };
 
+// ================= POST CARD =================
 function PostCard({
   post,
   onUpvote,
@@ -172,14 +113,13 @@ function PostCard({
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
-      {/* Header: avatar, author, time, badges */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
             <AvatarFallback
               className={cn(
                 post.avatarColor,
-                "text-[11px] font-semibold text-primary-foreground",
+                "text-[11px] font-semibold text-primary-foreground"
               )}
             >
               {post.initials}
@@ -193,7 +133,6 @@ function PostCard({
             </div>
           </div>
         </div>
-
         <div className="flex items-center gap-1.5">
           <Badge
             variant="outline"
@@ -205,7 +144,7 @@ function PostCard({
           <Badge
             className={cn(
               "rounded-lg border-0 px-2 py-0.5 text-[11px] font-medium",
-              urgency.className,
+              urgency.className
             )}
           >
             {urgency.label}
@@ -213,7 +152,6 @@ function PostCard({
         </div>
       </div>
 
-      {/* Title and description */}
       <h3 className="mt-3 text-sm font-semibold text-foreground leading-snug">
         {post.title}
       </h3>
@@ -221,13 +159,11 @@ function PostCard({
         {post.description}
       </p>
 
-      {/* Location */}
       <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
         <MapPin className="h-3 w-3" />
         <span>{post.location}</span>
       </div>
 
-      {/* Actions */}
       <div className="mt-4 flex items-center gap-4 border-t border-border pt-3">
         <button
           onClick={() => onUpvote(post.id)}
@@ -251,12 +187,13 @@ function PostCard({
   );
 }
 
+// ================= MAIN VIEW =================
 export function NeighborsView() {
   const [posts, setPosts] = useState(MOCK_POSTS);
   const [filter, setFilter] = useState<"all" | Category>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // New post form state
+  const [selectedIncident, setSelectedIncident] = useState<null | typeof incidents[0]>(null);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newLocation, setNewLocation] = useState("");
@@ -266,13 +203,13 @@ export function NeighborsView() {
   const filteredPosts =
     filter === "all" ? posts : posts.filter((p) => p.category === filter);
 
-  function handleUpvote(id: string) {
+  const handleUpvote = (id: string) => {
     setPosts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, upvotes: p.upvotes + 1 } : p)),
+      prev.map((p) => (p.id === id ? { ...p, upvotes: p.upvotes + 1 } : p))
     );
-  }
+  };
 
-  function handleSubmit() {
+  const handleSubmit = () => {
     if (!newTitle.trim() || !newDescription.trim()) return;
 
     const newPost: NeighborPost = {
@@ -297,8 +234,9 @@ export function NeighborsView() {
     setNewLocation("");
     setNewCategory("other");
     setNewUrgency("low");
+    setSelectedIncident(null);
     setDialogOpen(false);
-  }
+  };
 
   const filters: { value: "all" | Category; label: string }[] = [
     { value: "all", label: "All" },
@@ -310,7 +248,7 @@ export function NeighborsView() {
 
   return (
     <div>
-      {/* Page header */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground tracking-tight">
@@ -329,40 +267,88 @@ export function NeighborsView() {
             </Button>
           </DialogTrigger>
 
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="w-full max-w-3xl max-h-[80vh] p-6 overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Report Something Suspicious</DialogTitle>
+              <DialogTitle>Report Something</DialogTitle>
               <DialogDescription>
-                Your neighbors will see this post. Be specific about what you
-                saw and where.
+                Select one of your recent incidents below, or create a new report.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex flex-col gap-4 py-2">
-              {/* Title */}
-              <div>
-                <label
-                  htmlFor="post-title"
-                  className="mb-1.5 block text-sm font-medium text-foreground"
+            {/* Recent incidents list */}
+            <div className="mt-4 flex flex-col gap-3 max-h-[35vh] overflow-y-auto">
+              {incidents.map((inc) => (
+                <div
+                  key={inc.id}
+                  className={cn(
+                    "rounded-lg border p-4 cursor-pointer transition",
+                    selectedIncident?.id === inc.id
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:bg-muted"
+                  )}
+                  onClick={() => {
+                    setSelectedIncident(inc);
+                    setNewTitle(inc.label);
+                    setNewDescription(inc.summaryLocal);
+                    setNewLocation(inc.cameraName);
+                    setNewCategory("other");
+                    setNewUrgency(
+                      inc.threatLevel === "low"
+                        ? "low"
+                        : inc.threatLevel === "medium"
+                        ? "medium"
+                        : "high"
+                    );
+                  }}
                 >
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-semibold text-foreground">{inc.label}</p>
+                    <Badge
+                      className={cn(
+                        "text-xs px-2 py-0.5 rounded-lg",
+                        inc.threatLevel === "low"
+                          ? "bg-success/10 text-success"
+                          : inc.threatLevel === "medium"
+                          ? "bg-warning/10 text-warning"
+                          : "bg-destructive/10 text-destructive"
+                      )}
+                    >
+                      {inc.threatLevel.charAt(0).toUpperCase() + inc.threatLevel.slice(1)}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground truncate">
+                    {inc.summaryLocal}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Location: {inc.cameraName}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Threat Score: {inc.threatScore}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="my-4 border-t border-border" />
+
+            {/* New Report Form */}
+            <div className="flex flex-col gap-4">
+              <div>
+                <label htmlFor="post-title" className="mb-1 block text-sm font-medium text-foreground">
                   What did you see?
                 </label>
                 <input
                   id="post-title"
                   type="text"
-                  placeholder="e.g., Suspicious person near park"
+                  placeholder="Suspicious person near park"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
-              {/* Description */}
               <div>
-                <label
-                  htmlFor="post-desc"
-                  className="mb-1.5 block text-sm font-medium text-foreground"
-                >
+                <label htmlFor="post-desc" className="mb-1 block text-sm font-medium text-foreground">
                   Details
                 </label>
                 <textarea
@@ -375,31 +361,23 @@ export function NeighborsView() {
                 />
               </div>
 
-              {/* Location */}
               <div>
-                <label
-                  htmlFor="post-loc"
-                  className="mb-1.5 block text-sm font-medium text-foreground"
-                >
+                <label htmlFor="post-loc" className="mb-1 block text-sm font-medium text-foreground">
                   Location
                 </label>
                 <input
                   id="post-loc"
                   type="text"
-                  placeholder="e.g., Corner of Elm St & 3rd Ave"
+                  placeholder="Corner of Elm St & 3rd Ave"
                   value={newLocation}
                   onChange={(e) => setNewLocation(e.target.value)}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
-              {/* Category + urgency row */}
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label
-                    htmlFor="post-cat"
-                    className="mb-1.5 block text-sm font-medium text-foreground"
-                  >
+                  <label htmlFor="post-cat" className="mb-1 block text-sm font-medium text-foreground">
                     Category
                   </label>
                   <select
@@ -414,11 +392,9 @@ export function NeighborsView() {
                     <option value="other">Other</option>
                   </select>
                 </div>
+
                 <div className="flex-1">
-                  <label
-                    htmlFor="post-urg"
-                    className="mb-1.5 block text-sm font-medium text-foreground"
-                  >
+                  <label htmlFor="post-urg" className="mb-1 block text-sm font-medium text-foreground">
                     Urgency
                   </label>
                   <select
@@ -429,18 +405,14 @@ export function NeighborsView() {
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
-                    <option value="high">Urgent</option>
+                    <option value="high">High</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-                className="rounded-xl"
-              >
+            <DialogFooter className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="rounded-xl">
                 Cancel
               </Button>
               <Button
@@ -455,44 +427,26 @@ export function NeighborsView() {
         </Dialog>
       </div>
 
-      {/* Filters */}
-      <div className="mt-5 flex items-center gap-2">
+      {/* Filter Tabs */}
+      <div className="mt-5 flex gap-2">
         {filters.map((f) => (
-          <button
+          <Button
             key={f.value}
+            variant={filter === f.value ? "default" : "outline"}
+            size="sm"
             onClick={() => setFilter(f.value)}
-            className={cn(
-              "rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors",
-              filter === f.value
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-            )}
           >
             {f.label}
-          </button>
+          </Button>
         ))}
       </div>
 
-      {/* Posts grid */}
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {filteredPosts.map((post) => (
-          <PostCard key={post.id} post={post} onUpvote={handleUpvote} />
+      {/* Post List */}
+      <div className="mt-5 flex flex-col gap-5">
+        {filteredPosts.map((p) => (
+          <PostCard key={p.id} post={p} onUpvote={handleUpvote} />
         ))}
       </div>
-
-      {filteredPosts.length === 0 && (
-        <div className="mt-16 flex flex-col items-center justify-center text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-            <Eye className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-sm font-medium text-foreground">
-            No reports yet
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Nothing in this category. Be the first to report something.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

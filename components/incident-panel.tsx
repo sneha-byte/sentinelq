@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-// Helper for detection icon
+// Detection icon helper
 function getDetectionIcon(className: string) {
   switch (className) {
     case "person":
@@ -35,7 +35,7 @@ function getDetectionIcon(className: string) {
   }
 }
 
-// IncidentCard Component
+// IncidentCard
 export function IncidentCard({
   incident,
   onSelect,
@@ -57,7 +57,7 @@ export function IncidentCard({
         "w-full text-left rounded-xl border p-3.5 transition-all duration-200 overflow-hidden",
         selected
           ? "border-primary bg-primary/5 shadow-sm"
-          : "border-border bg-card hover:border-primary/30 hover:shadow-sm",
+          : "border-border bg-card hover:border-primary/30 hover:shadow-sm"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -69,7 +69,7 @@ export function IncidentCard({
                 ? "bg-destructive/10"
                 : incident.threatLevel === "medium"
                 ? "bg-warning/10"
-                : "bg-success/10",
+                : "bg-success/10"
             )}
           >
             <AlertTriangle
@@ -77,9 +77,7 @@ export function IncidentCard({
             />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {incident.label}
-            </p>
+            <p className="text-sm font-medium text-foreground truncate">{incident.label}</p>
             <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Camera className="h-3 w-3" />
@@ -100,7 +98,6 @@ export function IncidentCard({
         </Badge>
       </div>
 
-      {/* Detections */}
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         {incident.detections.map((det, i) => {
           const Icon = getDetectionIcon(det.className);
@@ -124,16 +121,14 @@ export function IncidentCard({
   );
 }
 
-// IncidentDetail Component
+// IncidentDetail
 export function IncidentDetail({
   incident,
-  onClose,
   onAcknowledge,
   onAlertAuthorities,
   acknowledged,
 }: {
   incident: Incident;
-  onClose?: () => void;
   onAcknowledge?: (id: string) => void;
   onAlertAuthorities?: (id: string) => void;
   acknowledged?: boolean;
@@ -145,9 +140,7 @@ export function IncidentDetail({
       {/* Header */}
       <div>
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-semibold text-foreground">
-            {incident.label}
-          </h3>
+          <h3 className="text-base font-semibold text-foreground">{incident.label}</h3>
           <Badge
             variant="outline"
             className={cn("shrink-0", getThreatBgColor(incident.threatLevel))}
@@ -163,29 +156,38 @@ export function IncidentDetail({
 
       {/* Score bars */}
       <div className="grid grid-cols-3 gap-4">
-        {["threat", "quality", "confidence"].map((type) => {
-          const value =
-            type === "threat"
-              ? incident.threatScore
-              : type === "quality"
-              ? incident.qualityScore
-              : incident.confidenceScore;
-          const color =
-            type === "threat"
-              ? "destructive"
-              : type === "quality"
-              ? "primary"
-              : "chart-2";
-          return (
-            <div key={type} className="rounded-lg bg-secondary/50 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                <span className="text-sm font-bold text-foreground">{value}%</span>
-              </div>
-              <Progress value={value} className={`h-1.5 bg-secondary [&>div]:bg-${color}`} />
-            </div>
-          );
-        })}
+        <div className="rounded-lg bg-secondary/50 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">Threat</span>
+            <span className={cn("text-sm font-bold", getThreatColor(incident.threatLevel))}>
+              {incident.threatScore}%
+            </span>
+          </div>
+          <Progress
+            value={incident.threatScore}
+            className="h-1.5 bg-secondary [&>div]:bg-destructive"
+          />
+        </div>
+        <div className="rounded-lg bg-secondary/50 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">Quality</span>
+            <span className="text-sm font-bold text-foreground">{incident.qualityScore}%</span>
+          </div>
+          <Progress
+            value={incident.qualityScore}
+            className="h-1.5 bg-secondary [&>div]:bg-primary"
+          />
+        </div>
+        <div className="rounded-lg bg-secondary/50 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">Confidence</span>
+            <span className="text-sm font-bold text-foreground">{incident.confidenceScore}%</span>
+          </div>
+          <Progress
+            value={incident.confidenceScore}
+            className="h-1.5 bg-secondary [&>div]:bg-chart-2"
+          />
+        </div>
       </div>
 
       {/* AI Summary */}
@@ -212,7 +214,7 @@ export function IncidentDetail({
 
       {/* Actions */}
       {isActive && (
-        <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="flex items-center gap-3">
           <Button
             size="sm"
             variant="outline"
@@ -226,7 +228,7 @@ export function IncidentDetail({
             size="sm"
             variant="destructive"
             onClick={() => onAlertAuthorities?.(incident.id)}
-            disabled={!acknowledged}
+            disabled={!acknowledged} // only works after acknowledging
             className="flex-1"
           >
             <Phone className="h-4 w-4 mr-1.5" />
