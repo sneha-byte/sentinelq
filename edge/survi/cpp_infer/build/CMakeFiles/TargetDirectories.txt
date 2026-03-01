@@ -1,0 +1,3 @@
+/home/arduino/ArduinoApps/survillance/cpp_infer/build/CMakeFiles/ei_infer_mp4.dir
+/home/arduino/ArduinoApps/survillance/cpp_infer/build/CMakeFiles/edit_cache.dir
+/home/arduino/ArduinoApps/survillance/cpp_infer/build/CMakeFiles/rebuild_cache.dir
