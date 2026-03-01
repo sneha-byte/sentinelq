@@ -104,7 +104,7 @@ export function IncidentDetail({
             Score: {incident.threatScore}/100
           </Badge>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>
           {incident.cameraName} · {formatDistanceToNow(new Date(incident.startedAt), { addSuffix: true })}
         </p>
       </div>
