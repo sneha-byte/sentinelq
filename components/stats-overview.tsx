@@ -49,10 +49,20 @@ export function StatsOverview({ cameras = mockCameras, incidents = mockIncidents
   const safetyLabel =
     safetyScore >= 80 ? "Low risk" : safetyScore >= 55 ? "Moderate risk" : "High risk"
 
-  // Edge processing rate
-  const totalInc = incidents.length || 1
-  const localInc = incidents.filter((i) => i.routeMode === "LOCAL").length
-  const edgePct = Math.round((localInc / totalInc) * 1000) / 10
+  // Edge vs Cloud routing breakdown (real data from DB route_mode field)
+  const totalInc  = incidents.length || 1
+  const edgeInc   = incidents.filter((i) => i.routeMode === "LOCAL").length
+  const cloudInc  = incidents.filter((i) => i.routeMode === "CLOUD").length
+  const hybridInc = incidents.filter((i) => i.routeMode === "LOCAL_VERIFY_CLOUD").length
+  const edgePct   = Math.round((edgeInc  / totalInc) * 100)
+  const cloudPct  = Math.round((cloudInc / totalInc) * 100)
+
+  // Show whichever is dominant, with full breakdown in description
+  const routeLabel = cloudInc >= edgeInc ? "Cloud Processed" : "Edge Processed"
+  const routeValue = cloudInc >= edgeInc ? `${cloudPct}%` : `${edgePct}%`
+  const routeDesc  = `${edgeInc} edge · ${cloudInc} cloud · ${hybridInc} hybrid`
+  const routeColor = cloudInc >= edgeInc ? "text-primary" : "text-success"
+  const routeBg    = cloudInc >= edgeInc ? "bg-primary/10" : "bg-success/10"
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -81,12 +91,12 @@ export function StatsOverview({ cameras = mockCameras, incidents = mockIncidents
         bgColor={safetyScore >= 80 ? "bg-success/10" : safetyScore >= 55 ? "bg-warning/10" : "bg-destructive/10"}
       />
       <StatCard
-        label="Edge Processed"
-        value={`${edgePct}%`}
+        label={routeLabel}
+        value={routeValue}
         icon={Cpu}
-        description={`${localInc} local inferences`}
-        color="text-success"
-        bgColor="bg-success/10"
+        description={routeDesc}
+        color={routeColor}
+        bgColor={routeBg}
       />
     </div>
   )

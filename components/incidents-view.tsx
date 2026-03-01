@@ -8,10 +8,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertTriangle, Bell, Check, Loader2,
   ShieldAlert, Clock, Sparkles, ArrowLeft,
+  Cpu, Cloud, GitMerge,
 } from "lucide-react";
 
-type Filter   = "all" | "active" | "resolved";
-type SortMode = "combined" | "danger" | "time";
+type Filter    = "all" | "active" | "resolved";
+type RouteFilter = "all" | "edge" | "cloud" | "hybrid";
+type SortMode  = "combined" | "danger" | "time";
 
 function getThreatScore10(score: number) {
   return Math.max(1, Math.min(10, Math.round(score / 10)));
@@ -41,6 +43,7 @@ export function IncidentsView({
 }: IncidentsViewProps) {
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [filter,           setFilter]           = useState<Filter>("all");
+  const [routeFilter,      setRouteFilter]      = useState<RouteFilter>("all");
   const [sortMode,         setSortMode]         = useState<SortMode>("combined");
 
   // When incidents load/update from DB, keep current selection or pick best default
@@ -59,6 +62,9 @@ export function IncidentsView({
     const list = incidents.filter(i => {
       if (filter === "active"   &&  i.endedAt) return false;
       if (filter === "resolved" && !i.endedAt) return false;
+      if (routeFilter === "edge"   && i.routeMode !== "LOCAL")               return false;
+      if (routeFilter === "cloud"  && i.routeMode !== "CLOUD")               return false;
+      if (routeFilter === "hybrid" && i.routeMode !== "LOCAL_VERIFY_CLOUD")  return false;
       return true;
     });
     return [...list].sort((a, b) => {
@@ -66,7 +72,14 @@ export function IncidentsView({
       if (sortMode === "time")   return new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime();
       return getCombinedScore(b) - getCombinedScore(a);
     });
-  }, [incidents, filter, sortMode]);
+  }, [incidents, filter, routeFilter, sortMode]);
+
+  const ROUTE_OPTIONS: { id: RouteFilter; label: string; Icon: React.ElementType; color: string }[] = [
+    { id: "all",    label: "All",    Icon: AlertTriangle, color: "" },
+    { id: "edge",   label: "Edge",   Icon: Cpu,           color: "text-success" },
+    { id: "cloud",  label: "Cloud",  Icon: Cloud,         color: "text-primary" },
+    { id: "hybrid", label: "Hybrid", Icon: GitMerge,      color: "text-warning" },
+  ];
 
   const SORT_OPTIONS: { id: SortMode; label: string; Icon: React.ElementType }[] = [
     { id: "combined", label: "Smart",  Icon: Sparkles },
@@ -93,7 +106,7 @@ export function IncidentsView({
           </span>
         </div>
 
-        {/* Filter tabs */}
+        {/* Status filter tabs */}
         <div className="flex items-center gap-1 border-b border-border px-3 py-2 shrink-0">
           {(["all", "active", "resolved"] as Filter[]).map(f => (
             <button key={f} onClick={() => setFilter(f)}
@@ -102,6 +115,25 @@ export function IncidentsView({
                 filter === f ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
               )}>
               {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Route filter tabs */}
+        <div className="flex items-center gap-1 border-b border-border px-3 py-2 shrink-0">
+          {ROUTE_OPTIONS.map(({ id, label, Icon, color }) => (
+            <button key={id} onClick={() => setRouteFilter(id)}
+              className={cn(
+                "flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                routeFilter === id
+                  ? id === "edge"   ? "bg-success/10 text-success"
+                  : id === "cloud"  ? "bg-primary/10 text-primary"
+                  : id === "hybrid" ? "bg-warning/10 text-warning"
+                  : "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}>
+              <Icon className={cn("h-3 w-3", routeFilter === id ? color : "")} />
+              {label}
             </button>
           ))}
         </div>

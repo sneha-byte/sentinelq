@@ -346,26 +346,65 @@ export function IncidentDetail({
       {/* ── Incident Media ── */}
       <IncidentMediaSection incidentId={incident.id} />
 
-      {/* AI Summary */}
-      <div className="rounded-xl border border-border bg-secondary/30 p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Cpu className="h-4 w-4 text-success" />
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Edge Analysis
+      {/* Analysis summaries — edge + cloud */}
+      <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
+        {/* Route badge */}
+        <div className="flex items-center gap-2">
+          {incident.routeMode === "CLOUD" ? (
+            <Cloud className="h-4 w-4 text-primary" />
+          ) : incident.routeMode === "LOCAL_VERIFY_CLOUD" ? (
+            <Cpu className="h-4 w-4 text-warning" />
+          ) : (
+            <Cpu className="h-4 w-4 text-success" />
+          )}
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {incident.routeMode === "CLOUD"
+              ? "Cloud Analysis"
+              : incident.routeMode === "LOCAL_VERIFY_CLOUD"
+              ? "Edge → Cloud Hybrid"
+              : "Edge Analysis"}
+          </span>
+          <span className={cn(
+            "ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+            incident.routeMode === "CLOUD"
+              ? "bg-primary/10 text-primary border-primary/20"
+              : incident.routeMode === "LOCAL_VERIFY_CLOUD"
+              ? "bg-warning/10 text-warning border-warning/20"
+              : "bg-success/10 text-success border-success/20"
+          )}>
+            {incident.routeMode === "CLOUD" ? "CLOUD" : incident.routeMode === "LOCAL_VERIFY_CLOUD" ? "HYBRID" : "EDGE"}
           </span>
         </div>
-        <p className="text-sm text-foreground leading-relaxed">{incident.summaryLocal}</p>
-        {incident.summaryCloud && (
-          <div className="mt-3 border-t border-border pt-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Cloud className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Cloud Verification
-              </span>
-            </div>
-            <p className="text-sm text-foreground leading-relaxed">{incident.summaryCloud}</p>
+
+        {/* Edge / local summary */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-1">
+            <Cpu className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Edge</span>
           </div>
-        )}
+          <p className="text-sm text-foreground leading-relaxed">
+            {incident.summaryLocal?.trim()
+              ? incident.summaryLocal
+              : `Detection recorded by edge device. Threat score: ${incident.threatScore}/100. Confidence: ${incident.confidenceScore}%.`}
+          </p>
+        </div>
+
+        {/* Cloud summary — always show section, placeholder if not yet analysed */}
+        <div className="border-t border-border pt-3">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Cloud className="h-3 w-3 text-primary" />
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Cloud</span>
+          </div>
+          {incident.summaryCloud?.trim() ? (
+            <p className="text-sm text-foreground leading-relaxed">{incident.summaryCloud}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">
+              {incident.routeMode === "LOCAL"
+                ? "Processed entirely on edge — no cloud verification needed."
+                : "Pending cloud analysis…"}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Step 1: Acknowledge */}

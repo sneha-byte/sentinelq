@@ -146,7 +146,7 @@ export function DashboardView({
   incidents = mockIncidents,
   clipUrls  = [],
 }: DashboardViewProps) {
-  const topCameras      = cameras.filter(c => c.status === "online").slice(0, 4)
+  const topCameras      = cameras.filter(c => c.status === "online").slice(0, 1)
   const recentIncidents = incidents.slice(0, 3)
   const activeIncident  = incidents.find(i => !i.endedAt)
   const { greeting, summary, status } = buildDailyBrief(incidents, cameras)

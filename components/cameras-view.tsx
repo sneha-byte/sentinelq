@@ -60,7 +60,7 @@ export function CamerasView({
     if (filter === "online") return c.status === "online";
     if (filter === "offline") return c.status === "offline" || c.status === "degraded";
     return true;
-  });
+  }).slice(0, 1);
 
   const camIncidents = selectedCamId
     ? incidents

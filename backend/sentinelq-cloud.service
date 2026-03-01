@@ -1,0 +1,21 @@
+[Unit]
+Description=SentinelQ Cloud Analysis Worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# Filled in automatically by install_cloud_service.sh — edit only if needed
+WorkingDirectory=/opt/sentinelq
+ExecStart=/opt/sentinelq/.venv/bin/python /opt/sentinelq/model/cloudModel.py --cloud-scan
+
+Restart=on-failure
+RestartSec=15s
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sentinelq-cloud
+
+[Install]
+WantedBy=multi-user.target
