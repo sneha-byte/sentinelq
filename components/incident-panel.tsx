@@ -2,11 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { Incident } from "@/lib/mock-data";
-import {
-  getThreatColor,
-  getThreatBgColor,
-  getRouteColor,
-} from "@/lib/mock-data";
+import { getThreatColor, getThreatBgColor } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
+// Helper for detection icon
 function getDetectionIcon(className: string) {
   switch (className) {
     case "person":
@@ -38,17 +35,16 @@ function getDetectionIcon(className: string) {
   }
 }
 
-interface IncidentCardProps {
-  incident: Incident;
-  onSelect?: (incident: Incident) => void;
-  selected?: boolean;
-}
-
+// IncidentCard Component
 export function IncidentCard({
   incident,
   onSelect,
   selected,
-}: IncidentCardProps) {
+}: {
+  incident: Incident;
+  onSelect?: (incident: Incident) => void;
+  selected?: boolean;
+}) {
   const isActive = !incident.endedAt;
   const timeAgo = formatDistanceToNow(new Date(incident.startedAt), {
     addSuffix: true,
@@ -69,12 +65,11 @@ export function IncidentCard({
           <div
             className={cn(
               "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-              incident.threatLevel === "critical" ||
-                incident.threatLevel === "high"
+              incident.threatLevel === "critical" || incident.threatLevel === "high"
                 ? "bg-destructive/10"
                 : incident.threatLevel === "medium"
-                  ? "bg-warning/10"
-                  : "bg-success/10",
+                ? "bg-warning/10"
+                : "bg-success/10",
             )}
           >
             <AlertTriangle
@@ -99,10 +94,7 @@ export function IncidentCard({
         </div>
         <Badge
           variant="outline"
-          className={cn(
-            "shrink-0 text-xs",
-            getThreatBgColor(incident.threatLevel),
-          )}
+          className={cn("shrink-0 text-xs", getThreatBgColor(incident.threatLevel))}
         >
           {incident.threatScore}
         </Badge>
@@ -132,19 +124,20 @@ export function IncidentCard({
   );
 }
 
-interface IncidentDetailProps {
-  incident: Incident;
-  onClose?: () => void;
-  onAcknowledge?: (id: string) => void;
-  onAlertAuthorities?: (id: string) => void;
-}
-
+// IncidentDetail Component
 export function IncidentDetail({
   incident,
   onClose,
   onAcknowledge,
   onAlertAuthorities,
-}: IncidentDetailProps) {
+  acknowledged,
+}: {
+  incident: Incident;
+  onClose?: () => void;
+  onAcknowledge?: (id: string) => void;
+  onAlertAuthorities?: (id: string) => void;
+  acknowledged?: boolean;
+}) {
   const isActive = !incident.endedAt;
 
   return (
@@ -164,55 +157,35 @@ export function IncidentDetail({
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           {incident.cameraName} --{" "}
-          {formatDistanceToNow(new Date(incident.startedAt), {
-            addSuffix: true,
-          })}
+          {formatDistanceToNow(new Date(incident.startedAt), { addSuffix: true })}
         </p>
       </div>
 
       {/* Score bars */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-lg bg-secondary/50 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">Threat</span>
-            <span
-              className={cn(
-                "text-sm font-bold",
-                getThreatColor(incident.threatLevel),
-              )}
-            >
-              {incident.threatScore}%
-            </span>
-          </div>
-          <Progress
-            value={incident.threatScore}
-            className="h-1.5 bg-secondary [&>div]:bg-destructive"
-          />
-        </div>
-        <div className="rounded-lg bg-secondary/50 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">Quality</span>
-            <span className="text-sm font-bold text-foreground">
-              {incident.qualityScore}%
-            </span>
-          </div>
-          <Progress
-            value={incident.qualityScore}
-            className="h-1.5 bg-secondary [&>div]:bg-primary"
-          />
-        </div>
-        <div className="rounded-lg bg-secondary/50 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">Confidence</span>
-            <span className="text-sm font-bold text-foreground">
-              {incident.confidenceScore}%
-            </span>
-          </div>
-          <Progress
-            value={incident.confidenceScore}
-            className="h-1.5 bg-secondary [&>div]:bg-chart-2"
-          />
-        </div>
+        {["threat", "quality", "confidence"].map((type) => {
+          const value =
+            type === "threat"
+              ? incident.threatScore
+              : type === "quality"
+              ? incident.qualityScore
+              : incident.confidenceScore;
+          const color =
+            type === "threat"
+              ? "destructive"
+              : type === "quality"
+              ? "primary"
+              : "chart-2";
+          return (
+            <div key={type} className="rounded-lg bg-secondary/50 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                <span className="text-sm font-bold text-foreground">{value}%</span>
+              </div>
+              <Progress value={value} className={`h-1.5 bg-secondary [&>div]:bg-${color}`} />
+            </div>
+          );
+        })}
       </div>
 
       {/* AI Summary */}
@@ -223,9 +196,7 @@ export function IncidentDetail({
             Edge Analysis
           </span>
         </div>
-        <p className="text-sm text-foreground leading-relaxed">
-          {incident.summaryLocal}
-        </p>
+        <p className="text-sm text-foreground leading-relaxed">{incident.summaryLocal}</p>
         {incident.summaryCloud && (
           <div className="mt-3 border-t border-border pt-3">
             <div className="flex items-center gap-2 mb-2">
@@ -234,16 +205,14 @@ export function IncidentDetail({
                 Cloud Verification
               </span>
             </div>
-            <p className="text-sm text-foreground leading-relaxed">
-              {incident.summaryCloud}
-            </p>
+            <p className="text-sm text-foreground leading-relaxed">{incident.summaryCloud}</p>
           </div>
         )}
       </div>
 
       {/* Actions */}
-      {isActive && !incident.acknowledged && (
-        <div className="flex items-center gap-3">
+      {isActive && (
+        <div className="flex flex-col sm:flex-row items-center gap-3">
           <Button
             size="sm"
             variant="outline"
@@ -257,6 +226,7 @@ export function IncidentDetail({
             size="sm"
             variant="destructive"
             onClick={() => onAlertAuthorities?.(incident.id)}
+            disabled={!acknowledged}
             className="flex-1"
           >
             <Phone className="h-4 w-4 mr-1.5" />
